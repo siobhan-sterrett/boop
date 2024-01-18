@@ -25,4 +25,11 @@ export const initialize_interaction = () => {
     canvas.addEventListener("mouseup", () => {
         selectedPiece = undefined;
     })
+
+    canvas.addEventListener("mouseenter", (event) => {
+        if (!(event.buttons & 1)) {
+            // Mouse button is not down
+            selectedPiece = undefined;
+        }
+    })
 }
