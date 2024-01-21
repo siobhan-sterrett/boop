@@ -1,8 +1,8 @@
 import { addDrawable } from "./drawable";
-import { addDropTarget } from "./dropTarget";
+import { addDropTarget, removeDropTarget } from "./dropTarget";
 import { EntityID, getNextEntityID } from "./entityID";
-import { Piece, getPiece } from "./piece";
-import { addPositionable } from "./positionable";
+import { Piece } from "./piece";
+import { addPositionable, getPosition } from "./positionable";
 
 type Cell = {
     i: number;
@@ -12,12 +12,8 @@ type Cell = {
 
 const cells: Map<EntityID, Cell> = new Map();
 
-export const addCell = (entityID: EntityID, cell: Cell) => {
+const addCell = (entityID: EntityID, cell: Cell) => {
     cells.set(entityID, cell);
-}
-
-export const deleteCell = (entityID: EntityID) => {
-    cells.delete(entityID);
 }
 
 export const setPiece = (entityID: EntityID, piece: Piece) => {
@@ -25,6 +21,7 @@ export const setPiece = (entityID: EntityID, piece: Piece) => {
     if (cell) {
         cell.piece = piece;
         console.log(`Set piece at (${cell.i}, ${cell.j}) to`, piece);
+        removeDropTarget(entityID);
     }
 }
 
@@ -32,7 +29,23 @@ export const clearPiece = (entityID: EntityID) => {
     const cell = cells.get(entityID);
     if (cell) {
         delete cell.piece;
+        addDropTarget(entityID, {
+            dropPosition: dropPosition(entityID),
+        });
     }
+}
+
+const dropPosition = (entityID: EntityID): [number, number] | undefined => {
+    const position = getPosition(entityID);
+    if (position) {
+        const [x, y] = position;
+        return [
+            x + 33,
+            y + 33
+        ]
+    }
+
+    return undefined;
 }
 
 export const createCell = (i: number, j: number) => {
@@ -61,10 +74,6 @@ export const createCell = (i: number, j: number) => {
             position[0] + 33,
             position[1] + 33
         ],
-        onDrop: (dropped: EntityID) => {
-            const piece = getPiece(dropped);
-            setPiece(id, piece);
-        }
     })
 }
 

@@ -13,15 +13,9 @@ export type Piece = {
 
 const pieces: Map<EntityID, Piece> = new Map();
 
-export const addPiece = (entityID: EntityID, piece: Piece) => {
+const addPiece = (entityID: EntityID, piece: Piece) => {
     pieces.set(entityID, piece);
 }
-
-export const deletePiece = (entityID: EntityID) => {
-    pieces.delete(entityID);
-}
-
-export const getPiece = (entityID: EntityID): Piece | undefined => pieces.get(entityID);
 
 export const createPiece = (kind: Piece['kind'], color: Piece['color']): EntityID => {
     const entityID = getNextEntityID();

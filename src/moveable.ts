@@ -13,7 +13,7 @@ export const addMoveable = (entityID: EntityID, moveable: Moveable) => {
     moveables.set(entityID, moveable);
 }
 
-export const deleteMoveable = (entityID: EntityID) => {
+const deleteMoveable = (entityID: EntityID) => {
     moveables.delete(entityID);
 }
 

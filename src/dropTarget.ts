@@ -4,7 +4,6 @@ import { getPosition } from "./positionable";
 
 export type DropTarget = {
     dropPosition: [number, number];
-    onDrop: (dropped: EntityID) => void;
 };
 
 const dropTargets: Map<EntityID, DropTarget> = new Map();

@@ -12,10 +12,6 @@ export const addDrawable = (entityID: EntityID, drawable: Drawable) => {
     drawables.set(entityID, drawable);
 }
 
-export const deleteDrawable = (entityID: EntityID) => {
-    drawables.delete(entityID);
-}
-
 export const getPath = (entityID: EntityID): Path2D | undefined => drawables.get(entityID)?.path;
 
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
