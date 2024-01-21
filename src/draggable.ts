@@ -32,7 +32,7 @@ const dropCurrentDraggable = (offset: [number, number]) => {
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
 export const ctx = canvas.getContext('2d');
 
-canvas.addEventListener('mousedown', (event) => {
+export const startDrag = (event: MouseEvent) => {
     for (const [entity] of draggables) {
         const path = getPath(entity);
         const [x, y] = getPosition(entity);
@@ -48,20 +48,14 @@ canvas.addEventListener('mousedown', (event) => {
     }
 
     currentDraggable = undefined;
-});
+}
 
-canvas.addEventListener('mousemove', (event) => {
+export const doDrag = (event: MouseEvent) => {
     if (currentDraggable) {
         setPosition(currentDraggable, [event.offsetX, event.offsetY]);
     }
-});
+}
 
-canvas.addEventListener('mouseup', (event) => {
+export const endDrag = (event: MouseEvent) => {
     dropCurrentDraggable([event.offsetX, event.offsetY]);
-});
-
-canvas.addEventListener('mouseenter', (event) => {
-    if (!(event.buttons & 1)) {
-        dropCurrentDraggable([event.offsetX, event.offsetY]);
-    }
-})
+}
