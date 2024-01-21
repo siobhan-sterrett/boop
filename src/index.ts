@@ -1,20 +1,16 @@
-//import { initialize_interaction } from "./interaction";
-//import { initialize_pieces } from "./pieces";
-//import { draw_pieces } from "./graphics";
-
+import { createBoard } from "./board";
 import { addDraggable } from "./draggable";
 import { addDrawable, drawAll } from "./drawable";
 import { createEntity } from "./entity";
 import { addPositionable } from "./positionable";
 
-//initialize_interaction();
-//initialize_pieces();
+createBoard();
 
 const piece = createEntity();
 
 addDrawable(piece, (() => {
     const path = new Path2D();
-    path.ellipse(0, 0, 20, 20, 0, 0, 2 * Math.PI);
+    path.ellipse(0, 0, 15, 15, 0, 0, 2 * Math.PI);
 
     return {
         path,
