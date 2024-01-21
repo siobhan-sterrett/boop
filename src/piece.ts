@@ -24,7 +24,8 @@ export const createPiece = (kind: Piece['kind'], color: Piece['color']): EntityI
 
     addDrawable(entityID, (() => {
         const path = new Path2D();
-        path.ellipse(0, 0, 15, 15, 0, 0, 2 * Math.PI);
+        const radius = kind == 'cat' ? 25 : 15;
+        path.ellipse(0, 0, radius, radius, 0, 0, 2 * Math.PI);
 
         return {
             path,
