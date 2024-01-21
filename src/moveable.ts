@@ -1,4 +1,4 @@
-import { Entity } from "./entity";
+import { EntityID } from "./entityID";
 import { getPosition, setPosition } from "./positionable";
 
 type Moveable = {
@@ -6,13 +6,13 @@ type Moveable = {
     target: [number, number];
 }
 
-const moveables: Map<Entity, Moveable> = new Map();
+const moveables: Map<EntityID, Moveable> = new Map();
 
-export const addMoveable = (entity: Entity, moveable: Moveable) => {
+export const addMoveable = (entity: EntityID, moveable: Moveable) => {
     moveables.set(entity, moveable);
 }
 
-export const deleteMoveable = (entity: Entity) => {
+export const deleteMoveable = (entity: EntityID) => {
     moveables.delete(entity);
 }
 

@@ -1,20 +1,20 @@
 import { getPath } from "./drawable";
-import { Entity } from "./entity";
+import { EntityID } from "./entityID";
 import { getPosition, setPosition } from "./positionable";
 
 type Draggable = {
     onDrop?: (offset: [number, number]) => void;
 };
 
-const draggables: Map<Entity, Draggable> = new Map();
+const draggables: Map<EntityID, Draggable> = new Map();
 
-let currentDraggable: Entity | undefined = undefined;
+let currentDraggable: EntityID | undefined = undefined;
 
-export const addDraggable = (entity: Entity, draggable: Draggable) => {
+export const addDraggable = (entity: EntityID, draggable: Draggable) => {
     draggables.set(entity, draggable);
 }
 
-export const deleteDraggable = (entity: Entity) => {
+export const deleteDraggable = (entity: EntityID) => {
     draggables.delete(entity);
 }
 
