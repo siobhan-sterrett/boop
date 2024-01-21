@@ -5,7 +5,7 @@ import { EntityID, getNextEntityID } from "./entityID";
 import { addMoveable } from "./moveable";
 import { addPositionable } from "./positionable";
 
-type Piece = {
+export type Piece = {
     kind: 'cat' | 'kitten',
     color: 'orange' | 'gray',
 }
@@ -19,6 +19,8 @@ export const addPiece = (entityID: EntityID, piece: Piece) => {
 export const deletePiece = (entityID: EntityID) => {
     pieces.delete(entityID);
 }
+
+export const getPiece = (entityID: EntityID): Piece | undefined => pieces.get(entityID);
 
 export const createPiece = (kind: Piece['kind'], color: Piece['color']): EntityID => {
     const entityID = getNextEntityID();

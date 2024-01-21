@@ -1,10 +1,10 @@
-import { createBoard } from "./board";
+import { createCells } from "./cell";
 import { drawAll } from "./drawable";
 import { initializeInteractions } from "./interactions";
 import { moveAll } from "./moveable";
 import { createPiece } from "./piece";
 
-createBoard();
+createCells();
 createPiece('cat', 'orange');
 initializeInteractions();
 
