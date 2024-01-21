@@ -4,30 +4,34 @@ import { getPosition, setPosition } from "./positionable";
 type Moveable = {
     speed: number;
     target: [number, number];
+    onComplete?: (entityID: EntityID) => void;
 }
 
 const moveables: Map<EntityID, Moveable> = new Map();
 
-export const addMoveable = (entity: EntityID, moveable: Moveable) => {
-    moveables.set(entity, moveable);
+export const addMoveable = (entityID: EntityID, moveable: Moveable) => {
+    moveables.set(entityID, moveable);
 }
 
-export const deleteMoveable = (entity: EntityID) => {
-    moveables.delete(entity);
+export const deleteMoveable = (entityID: EntityID) => {
+    moveables.delete(entityID);
 }
 
 export const moveAll = () => {
-    for (const [entity, { speed, target: [targetX, targetY] }] of moveables) {
-        const [x, y] = getPosition(entity);
+    for (const [entityID, { speed, target: [targetX, targetY], onComplete }] of moveables) {
+        const [x, y] = getPosition(entityID);
         const [distanceX, distanceY] = [targetX - x, targetY - y];
         const squaredDistance = distanceX ** 2 + distanceY ** 2;
         if (squaredDistance < speed ** 2) {
-            setPosition(entity, [targetX, targetY]);
-            deleteMoveable(entity);
+            setPosition(entityID, [targetX, targetY]);
+            deleteMoveable(entityID);
+            if (onComplete) {
+                onComplete(entityID);
+            }
         } else {
             const distance = Math.sqrt(squaredDistance);
             const [speedX, speedY] = [distanceX / distance * speed, distanceY / distance * speed];
-            setPosition(entity, [x + speedX, y + speedY]);
+            setPosition(entityID, [x + speedX, y + speedY]);
         }
     }
 }

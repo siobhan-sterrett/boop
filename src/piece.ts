@@ -1,3 +1,4 @@
+import { setPiece } from "./cell";
 import { addDraggable } from "./draggable";
 import { addDrawable } from "./drawable";
 import { getDropTarget, getDropPosition } from "./dropTarget";
@@ -48,7 +49,8 @@ export const createPiece = (kind: Piece['kind'], color: Piece['color']): EntityI
                 const dropPosition = getDropPosition(dropTarget)!;
                 addMoveable(entityID, {
                     speed: 10,
-                    target: dropPosition
+                    target: dropPosition,
+                    onComplete: () => setPiece(dropTarget, { kind, color })
                 })
             } else {
                 addMoveable(entityID, {

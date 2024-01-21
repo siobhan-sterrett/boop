@@ -24,6 +24,7 @@ export const setPiece = (entityID: EntityID, piece: Piece) => {
     const cell = cells.get(entityID);
     if (cell) {
         cell.piece = piece;
+        console.log(`Set piece at (${cell.i}, ${cell.j}) to`, piece);
     }
 }
 
