@@ -1,4 +1,5 @@
 import { addDrawable } from "./drawable";
+import { addDropTarget } from "./dropTarget";
 import { createEntity } from "./entity"
 import { addPositionable } from "./positionable";
 
@@ -18,6 +19,14 @@ const createBoardSquare = (i: number, j: number) => {
         400 + (j - 3) * 67
     ];
     addPositionable(boardSquare, { position });
+
+    const dropPosition: [number, number] = [
+        position[0] + 33,
+        position[1] + 33
+    ];
+    addDropTarget(boardSquare, {
+        dropPosition
+    });
 }
 
 export const createBoard = () => {

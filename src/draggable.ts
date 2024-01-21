@@ -2,7 +2,9 @@ import { getPath } from "./drawable";
 import { Entity } from "./entity";
 import { getPosition, setPosition } from "./positionable";
 
-type Draggable = void;
+type Draggable = {
+    onDrop?: (offset: [number, number]) => void;
+};
 
 const draggables: Map<Entity, Draggable> = new Map();
 
@@ -14,6 +16,17 @@ export const addDraggable = (entity: Entity, draggable: Draggable) => {
 
 export const deleteDraggable = (entity: Entity) => {
     draggables.delete(entity);
+}
+
+const dropCurrentDraggable = (offset: [number, number]) => {
+    if (currentDraggable) {
+        const { onDrop } = draggables.get(currentDraggable);
+        if (onDrop) {
+            onDrop(offset)
+        }
+
+        currentDraggable = undefined;
+    }
 }
 
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -43,12 +56,12 @@ canvas.addEventListener('mousemove', (event) => {
     }
 });
 
-canvas.addEventListener('mouseup', () => {
-    currentDraggable = undefined;
+canvas.addEventListener('mouseup', (event) => {
+    dropCurrentDraggable([event.offsetX, event.offsetY]);
 });
 
 canvas.addEventListener('mouseenter', (event) => {
     if (!(event.buttons & 1)) {
-        currentDraggable = undefined;
+        dropCurrentDraggable([event.offsetX, event.offsetY]);
     }
 })

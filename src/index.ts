@@ -1,7 +1,9 @@
 import { createBoard } from "./board";
 import { addDraggable } from "./draggable";
 import { addDrawable, drawAll } from "./drawable";
+import { getDropPosition, getDropTarget } from "./dropTarget";
 import { createEntity } from "./entity";
+import { addMoveable, moveAll } from "./moveable";
 import { addPositionable } from "./positionable";
 
 createBoard();
@@ -19,14 +21,31 @@ addDrawable(piece, (() => {
 })());
 
 addPositionable(piece, {
-    position: [300, 400]
+    position: [100, 700]
 });
 
-addDraggable(piece);
+addDraggable(piece, {
+    onDrop: ([offsetX, offsetY]) => {
+        const dropTarget = getDropTarget([offsetX, offsetY]);
+        if (dropTarget) {
+            const dropPosition = getDropPosition(dropTarget)!;
+            addMoveable(piece, {
+                speed: 10,
+                target: dropPosition
+            })
+        } else {
+            addMoveable(piece, {
+                speed: 10,
+                target: [100, 700]
+            })
+        }
+    }
+});
 
 const update_loop = () => {
     window.requestAnimationFrame(update_loop);
 
+    moveAll();
     drawAll();
 }
 
