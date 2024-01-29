@@ -2,10 +2,11 @@ import { createCells } from "./cell";
 import { drawAll } from "./drawable";
 import { initializeInteractions } from "./interactions";
 import { moveAll } from "./moveable";
-import { createPiece } from "./piece";
+import { createHand } from "./piece";
 
 createCells();
-createPiece('cat', 'orange');
+createHand('orange', 'player');
+createHand('gray', 'opponent');
 initializeInteractions();
 
 const update_loop = () => {

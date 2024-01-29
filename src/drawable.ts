@@ -19,6 +19,7 @@ export const ctx = canvas.getContext('2d');
 
 export const drawAll = () => {
     ctx.clearRect(0, 0, 600, 800);
+
     for (const [entityID, { path, fillStyle }] of drawables) {
         const [x, y] = getPosition(entityID);
         ctx.save();
