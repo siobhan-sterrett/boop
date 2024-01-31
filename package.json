@@ -8,5 +8,8 @@
   },
   "scripts": {
     "start": "webpack serve --open"
+  },
+  "dependencies": {
+    "xstate": "^5.6.0"
   }
 }
