@@ -15,6 +15,24 @@ export const screens = (() => {
     };
 })();
 
+export const showScreen = (screenName: keyof typeof screens) => {
+    for (const [name, screen] of Object.entries(screens)) {
+        if (name == screenName) {
+            screen.hidden = false;
+        } else {
+            screen.hidden = true;
+        }
+    }
+}
+
+export const playGameButton = (() => {
+    const playGameButton = document.getElementById('play-game-button');
+    if (!playGameButton) {
+        throw new Error('play game button not found');
+    }
+    return playGameButton;
+})();
+
 export const board = (() => {
     const board = document.getElementById('board');
     if (!board) {
