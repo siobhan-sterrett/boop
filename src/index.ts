@@ -1,4 +1,5 @@
 import { createActor, fromPromise, setup } from 'xstate';
+import { board, cells, getCell, getEmptyCells, opponentHand, playerHand, screens } from './elements';
 
 const onDragStart = (ev: DragEvent) => {
     if (ev.dataTransfer) {
@@ -33,41 +34,17 @@ const onDragOver = (ev: DragEvent) => {
     ev.preventDefault();
 }
 
-const onDrop = (ev: DragEvent) => {
-    if (ev.dataTransfer) {
-        const pieceId = ev.dataTransfer.getData('application/boop');
-        /// @ts-ignore target has appendChild
-        ev.target.appendChild(document.getElementById(pieceId));
-    }
-    const cell = ev.target as HTMLDivElement;
-    cell.classList.remove('cell-highlighted');
-    const coordinate = cell.getAttribute('data-coordinate')!.split(', ').map((x) => parseInt(x)) as [number, number];
-    rootActor.send({ type: 'piece-placed', coordinate })
-    ev.preventDefault();
-}
-
-const boop = async ([x, y]: [number, number]) => {
-    const board = document.getElementById('board')! as HTMLDivElement;
+const boop = async ([r, c]: [number, number]) => {
     const vectors: [number, number][] = [
-        [-1, -1], [0, -1], [1, -1],
-        [-1, 0], [1, 0],
-        [-1, 1], [0, 1], [1, 1],
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1], [0, 1],
+        [1, -1], [1, 0], [1, 1],
     ];
-
-    const getCell = (x: number, y: number): HTMLDivElement | undefined => {
-        const row = board.children[y] as HTMLDivElement;
-        if (row) {
-            const cell = row.children[x] as HTMLDivElement;
-            if (cell) {
-                return cell;
-            }
-        }
-    }
 
     const animationPromises: Promise<unknown>[] = [];
 
-    for (const [dx, dy] of vectors) {
-        const neighbor = getCell(x + dx, y + dy);
+    for (const [dr, dc] of vectors) {
+        const neighbor = getCell(r + dr, c + dc);
 
         if (!neighbor?.hasChildNodes()) {
             continue;
@@ -77,13 +54,13 @@ const boop = async ([x, y]: [number, number]) => {
 
         const piece = neighbor.children[0] as HTMLDivElement;
 
-        const target = getCell(x + 2 * dx, y + 2 * dy);
+        const target = getCell(r + 2 * dr, c + 2 * dc);
 
         if (target) {
             if (!target.hasChildNodes()) {
                 const animation = new Animation(new KeyframeEffect(piece, [
                     { transform: "translate(0px, 0px)" },
-                    { transform: `translate(${width * dx}px, ${height * dy}px)` }
+                    { transform: `translate(${width * dc}px, ${height * dr}px)` }
                 ], {
                     duration: 500
                 }));
@@ -97,7 +74,7 @@ const boop = async ([x, y]: [number, number]) => {
             } else {
                 const animation = new Animation(new KeyframeEffect(piece, [
                     { transform: "translate(0px, 0px)" },
-                    { transform: `translate(${width * dx / 2}px, ${height * dy / 2}px)` },
+                    { transform: `translate(${width * dc / 2}px, ${height * dr / 2}px)` },
                     { transform: "translate(0px, 0px)" }
                 ], {
                     duration: 500
@@ -110,7 +87,7 @@ const boop = async ([x, y]: [number, number]) => {
         } else {
             const animation = new Animation(new KeyframeEffect(piece, [
                 { transform: "translate(0px, 0px)" },
-                { transform: `translate(${width * dx}px, ${height * dy}px)` }
+                { transform: `translate(${width * dc}px, ${height * dr}px)` }
             ], {
                 duration: 500
             }));
@@ -118,10 +95,8 @@ const boop = async ([x, y]: [number, number]) => {
             animationPromises.push(animation.finished.then(() => {
                 neighbor.removeChild(piece);
                 if (piece.classList.contains('player-piece')) {
-                    const playerHand = document.getElementById('player-hand')!;
                     playerHand.appendChild(piece);
                 } else {
-                    const opponentHand = document.getElementById('opponent-hand')!;
                     opponentHand.appendChild(piece);
                 }
             }));
@@ -142,25 +117,22 @@ const rootMachine = setup({
     },
     guards: {
         isPlayerHandEmpty: (): boolean => {
-            const playerHand = document.getElementById('player-hand')!;
             return !playerHand.hasChildNodes();
         },
         isOpponentHandEmpty: (): boolean => {
-            const opponentHand = document.getElementById('opponent-hand')!;
             return !opponentHand.hasChildNodes();
         }
     },
     actions: {
         showScreen: (_, params: { gameScreen: 'game-menu' | 'game-play-area' }) => {
-            const { gameScreen } = params;
-            document.getElementById(gameScreen)!.hidden = false;
+            const screen = screens[params['gameScreen']];
+            screen.hidden = false;
         },
         hideScreen: (_, params: { gameScreen: 'game-menu' }) => {
-            const { gameScreen } = params;
-            document.getElementById(gameScreen)!.hidden = true;
+            const screen = screens[params['gameScreen']];
+            screen.hidden = true;
         },
         setPiecesInHandDraggable: () => {
-            const playerHand = document.getElementById('player-hand')!;
             for (const element of playerHand.children) {
                 element.setAttribute('draggable', 'true');
                 element.addEventListener('dragstart', onDragStart);
@@ -175,7 +147,6 @@ const rootMachine = setup({
             }
         },
         setEmptyCellsDroppable: () => {
-            const board = document.getElementById('board')!;
             for (const rowElement of board.children) {
                 for (const cellElement of rowElement.children) {
                     const coordinate = cellElement.getAttribute('data-coordinate')!;
@@ -186,40 +157,27 @@ const rootMachine = setup({
                     cellElement.addEventListener('dragover', onDragOver);
                     cellElement.addEventListener('dragenter', onDragEnter);
                     cellElement.addEventListener('dragleave', onDragLeave);
-                    cellElement.addEventListener('drop', onDrop);
                 }
             }
         },
         setCellsNotDroppable: () => {
-            const board = document.getElementById('board')!;
             for (const rowElement of board.children) {
                 for (const cellElement of rowElement.children) {
                     cellElement.removeEventListener('dragover', onDragOver);
                     cellElement.removeEventListener('dragenter', onDragEnter);
                     cellElement.removeEventListener('dragleave', onDragLeave);
-                    cellElement.removeEventListener('drop', onDrop);
                 }
             }
         },
         placeOpponentPiece: () => {
-            const emptyCells: HTMLDivElement[] = [];
-            const board = document.getElementById('board')! as HTMLDivElement;
-            for (const row of board.children) {
-                for (const cell of row.children) {
-                    if (!cell.hasChildNodes()) {
-                        emptyCells.push(cell as HTMLDivElement);
-                    }
-                }
-            }
+            const emptyCells = getEmptyCells();
 
-            const target = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            const [coordinate, target] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
-            const opponentHand = document.getElementById('opponent-hand')!;
             const piece = opponentHand.children[0];
             opponentHand.removeChild(piece);
             target.appendChild(piece);
 
-            const coordinate = target.getAttribute('data-coordinate')!.split(', ').map((x) => parseInt(x)) as [number, number];
             rootActor.send({ type: 'piece-placed', coordinate });
         }
     }
@@ -265,8 +223,13 @@ const rootMachine = setup({
                                         return event.coordinate;
                                     }
                                 },
-                                onDone: 'turnEnd'
+                                onDone: 'preTurnEnd'
                             },
+                        },
+                        preTurnEnd: {
+                            after: {
+                                500: 'turnEnd'
+                            }
                         },
                         turnEnd: {
                             type: 'final'
@@ -316,15 +279,24 @@ const rootMachine = setup({
     }
 });
 
-const rootActor = createActor(rootMachine, {
-    inspect: (inspectionEvent) => {
-        if (inspectionEvent.type == '@xstate.event') {
-            console.log(inspectionEvent.event);
-        }
-    }
-});
+const rootActor = createActor(rootMachine);
 rootActor.start();
 
 document.getElementById('play-game-button')?.addEventListener('click', () => {
     rootActor.send({ type: 'start-game' })
 })
+
+cells.forEach((row, rowIdx) => {
+    row.forEach((cell, colIdx) => {
+        cell.addEventListener('drop', (ev: DragEvent) => {
+            if (ev.dataTransfer) {
+                const pieceId = ev.dataTransfer.getData('application/boop');
+                cell.appendChild(document.getElementById(pieceId)!);
+            }
+
+            cell.classList.remove('cell-highlighted');
+            rootActor.send({ type: 'piece-placed', coordinate: [rowIdx, colIdx] });
+            ev.preventDefault();
+        });
+    });
+});
