@@ -79,6 +79,52 @@ export const getEmptyCells = (): [[number, number], Element][] => {
     return emptyCells;
 }
 
+export const getTriplets = (owner: 'player' | 'opponent') => {
+    const triplets: [[number, number], [number, number], [number, number]][] = [];
+    for (let r = 0; r < cells.length; ++r) {
+        const row = cells[r];
+        for (let c = 0; c < row.length; ++c) {
+            const cell = row[c];
+
+            const piece = cell.children[0];
+            if (!piece) {
+                continue;
+            }
+
+            if (piece.classList.contains(`${owner}-piece`)) {
+                const vectors: [number, number][] = [[0, -1], [-1, -1], [-1, 0], [-1, 1]];
+                for (const [dr, dc] of vectors) {
+                    const [ra, ca] = [r + dr, c + dc] as [number, number];
+                    const neighborA = getCell(ra, ca);
+                    const pieceA = neighborA?.children[0];
+                    if (!neighborA || !pieceA) {
+                        continue;
+                    }
+
+                    if (!pieceA.classList.contains(`${owner}-piece`)) {
+                        continue;
+                    }
+
+                    const [rb, cb] = [r - dr, c - dc] as [number, number];
+                    const neighborB = getCell(rb, cb);
+                    const pieceB = neighborB?.children[0];
+                    if (!neighborB || !pieceB) {
+                        continue;
+                    }
+
+                    if (!pieceB.classList.contains(`${owner}-piece`)) {
+                        continue;
+                    }
+
+                    triplets.push([[ra, ca], [r, c], [rb, cb]]);
+                }
+            }
+        }
+    }
+
+    return triplets;
+};
+
 export const playerHand = (() => {
     const playerHand = document.getElementById('player-hand');
     if (!playerHand) {
