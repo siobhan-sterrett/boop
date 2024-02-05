@@ -197,12 +197,24 @@ const postBoop = (turn: 'player' | 'opponent') => {
         if (triplets.length == 1) {
             setTimeout(() => graduateTriplet(turn, triplets[0]));
         } else if (triplets.length > 1) {
-            setTimeout(() => chooseTripletToGraduate(turn, triplets));
+            if (turn == 'player') {
+                setTimeout(() => choosePlayerTripletToGraduate(triplets));
+            } else {
+                setTimeout(() => chooseOpponentTripletToGraduate(triplets));
+            }
         } else {
             if (turn == 'player') {
-                setTimeout(opponentTurn, 500);
+                if (playerHand.childElementCount == 0) {
+                    setTimeout(returnPlayerPieceToHand);
+                } else {
+                    setTimeout(opponentTurn, 500);
+                }
             } else {
-                setTimeout(playerTurn, 500);
+                if (opponentHand.childElementCount == 0) {
+                    setTimeout(returnOpponentPieceToHand);
+                } else {
+                    setTimeout(playerTurn, 500);
+                }
             }
         }
     }
@@ -232,8 +244,8 @@ const graduateTriplet = (turn: 'player' | 'opponent', triplet: Element[]) => {
     }
 }
 
-const chooseTripletToGraduate = (turn: 'player' | 'opponent', triplets: Element[][]) => {
-    console.log('chooseTripletToGraduate');
+const choosePlayerTripletToGraduate = (triplets: Element[][]) => {
+    console.log('choosePlayerTripletToGraduate');
 
     for (const triplet of triplets) {
         for (const cell of triplet) {
@@ -254,7 +266,7 @@ const chooseTripletToGraduate = (turn: 'player' | 'opponent', triplets: Element[
 
                     removeOnClicks.forEach((callback) => callback());
 
-                    setTimeout(() => graduateTriplet(turn, triplet));
+                    setTimeout(() => graduateTriplet('player', triplet));
                 };
 
                 removeOnClicks.push(() => cell.removeEventListener('click', onClick));
@@ -264,7 +276,62 @@ const chooseTripletToGraduate = (turn: 'player' | 'opponent', triplets: Element[
     }
 }
 
+const chooseOpponentTripletToGraduate = (triplets: Element[][]) => {
+    console.log('chooseOpponentTripletToGraduate');
+
+    const triplet = triplets[Math.floor(Math.random() * triplets.length)];
+
+    setTimeout(() => graduateTriplet('opponent', triplet));
+}
+
+const returnPlayerPieceToHand = () => {
+    console.log('returnPlayerPieceToHand');
+
+    const removeOnClicks: (() => void)[] = [];
+    for (const row of cells) {
+        for (const cell of row) {
+            const piece = cell.children[0];
+            if (piece && piece.classList.contains('player-piece')) {
+                cell.dispatchEvent(new Event('highlight'));
+                const onClick = () => {
+                    cell.removeChild(piece);
+                    playerHand.appendChild(piece);
+                    removeOnClicks.forEach((callback) => callback());
+
+                    setTimeout(opponentTurn, 500);
+                };
+                removeOnClicks.push(() => {
+                    cell.dispatchEvent(new Event('unhighlight'));
+                    cell.removeEventListener('click', onClick);
+                });
+                cell.addEventListener('click', onClick);
+            }
+        }
+    }
+}
+
+const returnOpponentPieceToHand = () => {
+    console.log('returnOpponentPieceToHand');
+
+    const opponentCells: Element[] = [];
+    for (const row of cells) {
+        for (const cell of row) {
+            const piece = cell.children[0];
+            if (piece && piece.classList.contains('opponent-piece')) {
+                opponentCells.push(cell);
+            }
+        }
+    }
+
+    const cell = opponentCells[Math.floor(Math.random() * opponentCells.length)];
+    const piece = cell.children[0];
+    cell.removeChild(piece);
+    opponentHand.appendChild(piece);
+
+    setTimeout(playerTurn, 500);
+}
+
 const endGame = (winner: 'player' | 'opponent') => {
-    console.log('endGame');
+    console.log(`Winner: ${winner}`);
     // TODO
 }
