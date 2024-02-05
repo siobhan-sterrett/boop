@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "webpack serve --open",
-    "predeploy": "yarn run build",
+    "predeploy": "webpack build",
     "deploy": "gh-pages run build"
   },
   "dependencies": {},
