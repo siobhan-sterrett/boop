@@ -72,6 +72,7 @@ const playerTurn = () => {
 
 const opponentTurn = () => {
     console.log('opponentTurn');
+
     const emptyCells = getEmptyCells();
 
     const [[r, c], target] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
@@ -184,8 +185,7 @@ const postBoop = (turn: 'player' | 'opponent') => {
     const triplets = getTriplets(turn);
 
     const winningTriplet = triplets.find((triplet) =>
-        triplet.every(([r, c]) => {
-            const cell = getCell(r, c);
+        triplet.every((cell) => {
             const piece = cell?.children[0];
             return piece?.classList.contains('cat');
         })
@@ -197,7 +197,7 @@ const postBoop = (turn: 'player' | 'opponent') => {
         if (triplets.length == 1) {
             setTimeout(() => graduateTriplet(turn, triplets[0]));
         } else if (triplets.length > 1) {
-            setTimeout(() => chooseTripletToGraduate(triplets));
+            setTimeout(() => chooseTripletToGraduate(turn, triplets));
         } else {
             if (turn == 'player') {
                 setTimeout(opponentTurn, 500);
@@ -208,11 +208,10 @@ const postBoop = (turn: 'player' | 'opponent') => {
     }
 }
 
-const graduateTriplet = (turn: 'player' | 'opponent', triplet: [[number, number], [number, number], [number, number]]) => {
+const graduateTriplet = (turn: 'player' | 'opponent', triplet: Element[]) => {
     console.log('graduateTriplet');
 
-    for (const [r, c] of triplet) {
-        const cell = getCell(r, c)!;
+    for (const cell of triplet) {
         const piece = cell.children[0];
         cell.removeChild(piece);
         if (piece.classList.contains('kitten')) {
@@ -233,9 +232,36 @@ const graduateTriplet = (turn: 'player' | 'opponent', triplet: [[number, number]
     }
 }
 
-const chooseTripletToGraduate = (triplets: [[number, number], [number, number], [number, number]][]) => {
+const chooseTripletToGraduate = (turn: 'player' | 'opponent', triplets: Element[][]) => {
     console.log('chooseTripletToGraduate');
-    // TODO
+
+    for (const triplet of triplets) {
+        for (const cell of triplet) {
+            cell.dispatchEvent(new Event('highlight'));
+        }
+    }
+
+    const removeOnClicks: (() => void)[] = [];
+    for (const triplet of triplets) {
+        for (const cell of triplet) {
+            if (!triplets.some((tripletToCheck) => tripletToCheck != triplet && tripletToCheck.some((cellToCheck) => cellToCheck == cell))) {
+                const onClick = () => {
+                    for (const triplet of triplets) {
+                        for (const cell of triplet) {
+                            cell.dispatchEvent(new Event('unhighlight'));
+                        }
+                    }
+
+                    removeOnClicks.forEach((callback) => callback());
+
+                    setTimeout(() => graduateTriplet(turn, triplet));
+                };
+
+                removeOnClicks.push(() => cell.removeEventListener('click', onClick));
+                cell.addEventListener('click', onClick);
+            }
+        }
+    }
 }
 
 const endGame = (winner: 'player' | 'opponent') => {

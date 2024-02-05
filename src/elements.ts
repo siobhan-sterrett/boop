@@ -79,8 +79,8 @@ export const getEmptyCells = (): [[number, number], Element][] => {
     return emptyCells;
 }
 
-export const getTriplets = (owner: 'player' | 'opponent') => {
-    const triplets: [[number, number], [number, number], [number, number]][] = [];
+export const getTriplets = (owner: 'player' | 'opponent'): Element[][] => {
+    const triplets: Element[][] = [];
     for (let r = 0; r < cells.length; ++r) {
         const row = cells[r];
         for (let c = 0; c < row.length; ++c) {
@@ -94,8 +94,7 @@ export const getTriplets = (owner: 'player' | 'opponent') => {
             if (piece.classList.contains(`${owner}-piece`)) {
                 const vectors: [number, number][] = [[0, -1], [-1, -1], [-1, 0], [-1, 1]];
                 for (const [dr, dc] of vectors) {
-                    const [ra, ca] = [r + dr, c + dc] as [number, number];
-                    const neighborA = getCell(ra, ca);
+                    const neighborA = getCell(r + dr, c + dc);
                     const pieceA = neighborA?.children[0];
                     if (!neighborA || !pieceA) {
                         continue;
@@ -105,8 +104,7 @@ export const getTriplets = (owner: 'player' | 'opponent') => {
                         continue;
                     }
 
-                    const [rb, cb] = [r - dr, c - dc] as [number, number];
-                    const neighborB = getCell(rb, cb);
+                    const neighborB = getCell(r - dr, c - dc);
                     const pieceB = neighborB?.children[0];
                     if (!neighborB || !pieceB) {
                         continue;
@@ -116,7 +114,7 @@ export const getTriplets = (owner: 'player' | 'opponent') => {
                         continue;
                     }
 
-                    triplets.push([[ra, ca], [r, c], [rb, cb]]);
+                    triplets.push([neighborA, cell, neighborB]);
                 }
             }
         }
