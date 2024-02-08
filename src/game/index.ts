@@ -1,3 +1,3 @@
-export { Game, GameWithState, PlacePiece, placePiece, GraduatePieces, graduatePieces, isGraduatePieces, RetrievePiece, retrievePiece, isRetrievePiece, makeTurn, endTurn } from "./game";
+export { BoardCoordinate, Game, makeTurn, makeMove, swapPlayers, playerWins } from "./game";
 export { PieceKind } from "./piece";
-export { Move, PlaceMove, GraduateMove, RetrieveMove, Turn } from "./move";
+export { Move, GraduationCandidate, Turn } from "./move";

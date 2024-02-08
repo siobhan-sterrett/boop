@@ -1,32 +1,19 @@
-import { BoardCoordinate } from "./board";
+import { BoardCoordinate } from "./game";
 import { PieceKind } from "./piece";
 
-export type Move =
-    | PlaceMove
-    | GraduateMove
-    | RetrieveMove
-    ;
-
-export type PlaceMove = {
+export type Move = {
     kind: PieceKind;
     place: BoardCoordinate;
 }
 
-export type GraduateMove = {
-    graduate: BoardCoordinate[];
+export type GraduationCandidate = [BoardCoordinate, BoardCoordinate, BoardCoordinate];
+
+export type Graduate = {
+    graduate: GraduationCandidate;
 }
 
-export type RetrieveMove = {
+export type Retrieve = {
     retrieve: BoardCoordinate;
 }
 
-export type Turn = PlaceMove & ({
-    graduate: BoardCoordinate[];
-    retrieve?: undefined;
-} | {
-    graduate?: undefined;
-    retrieve: BoardCoordinate;
-} | {
-    graduate?: undefined;
-    retrieve?: undefined;
-});
+export type Turn = Move & Partial<Graduate> & Partial<Retrieve>;

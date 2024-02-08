@@ -3,58 +3,46 @@
  */
 
 import { Player } from ".";
-import { BoardCoordinate } from "../game/board";
-import { Move, Turn, PieceKind, PlacePiece, GameWithState, makeTurn, endTurn, PlaceMove, placePiece, isGraduatePieces, graduatePieces, isRetrievePiece, retrievePiece, GraduatePieces, GraduateMove, RetrievePiece, RetrieveMove } from "../game";
+import { BoardCoordinate, Game, GraduationCandidate, Move, PieceKind, Turn, makeTurn, playerWins, makeMove, swapPlayers } from "../game";
 
 export class RandomPlayer implements Player {
-    game: GameWithState<PlacePiece>
+    game: Game;
 
-    constructor(game: GameWithState<PlacePiece>) {
+    constructor(game: Game) {
         this.game = game;
     }
 
     *turns(initialTurn?: Turn): Generator<Turn, void, Turn> {
         if (initialTurn) {
-            const game = endTurn(makeTurn(this.game, initialTurn));
-            if (game == 'win') {
+            makeTurn(this.game, initialTurn);
+            if (playerWins(this.game)) {
                 return;
             }
-            this.game = game;
         }
 
         while (true) {
-            let turn: Turn = this.#randomPlaceMove();
-            const placed = placePiece(this.game, turn);
+            let move: Move = this.#randomMove();
+            let turn = makeMove(
+                this.game,
+                move,
+                () => { },
+                (candidates: GraduationCandidate[]) => candidates[Math.random() % candidates.length],
+                (retrieves: BoardCoordinate[]) => retrieves[Math.random() * retrieves.length]
+            );
 
-            // TODO: Instead of doing fancy type bullshit, maybe just use callbacks. 
-            // TODO: makeTurn(this.game, move, (candidates) => chooseCandidate(candidate), (retrieves) => chooseRetrieve(retrieves)): [Game, Turn]
-            const endOfTurn = (() => {
-                if (isGraduatePieces(placed.game)) {
-                    const graduateMove = this.#randomGraduateMove(placed.game);
-                    turn = { ...turn, ...graduateMove };
-                    return graduatePieces(placed.game, graduateMove);
-                } else if (isRetrievePiece(placed.game)) {
-                    const retrieveMove = this.#randomRetrieveMove(placed.game);
-                    turn = { ...turn, ...retrieveMove };
-                    return retrievePiece(placed.game, retrieveMove);
-                } else {
-                    return placed.game;
-                }
-            })();
-
-            let game = endTurn(endOfTurn);
-            if (game == 'win') {
+            if (playerWins(this.game)) {
                 return;
             }
+
+            swapPlayers(this.game);
 
             const opponentTurn = yield turn;
-
-            game = endTurn(makeTurn(game, opponentTurn));
-            if (game == 'win') {
+            makeTurn(this.game, opponentTurn);
+            if (playerWins(this.game)) {
                 return;
             }
 
-            this.game = game;
+            swapPlayers(this.game);
         }
     }
 
@@ -80,22 +68,10 @@ export class RandomPlayer implements Player {
         return emptyCells[Math.random() * emptyCells.length];
     }
 
-    #randomPlaceMove(): PlaceMove {
+    #randomMove(): Move {
         return {
             kind: this.#randomPieceKind(),
             place: this.#randomEmptyCell(),
         }
-    }
-
-    #randomGraduateMove(game: GameWithState<GraduatePieces>): GraduateMove {
-        return {
-            graduate: game.candidates[Math.random() % game.candidates.length]
-        };
-    }
-
-    #randomRetrieveMove(game: GameWithState<RetrievePiece>): RetrieveMove {
-        return {
-            retrieve: game.retrieves[Math.random() % game.retrieves.length]
-        };
     }
 }
