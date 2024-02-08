@@ -18,6 +18,7 @@ export class RandomPlayer implements Player {
             if (playerWins(this.game)) {
                 return;
             }
+            swapPlayers(this.game);
         }
 
         while (true) {
