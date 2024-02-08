@@ -1,103 +1,17 @@
+html {
+    width: 100%;
+    height: 100%;
+}
+
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-}
-
-#game-area {
-    flex-grow: 1;
-    border: solid;
-}
-
-.game-screen {
     width: 100%;
     height: 100%;
     display: flex;
-}
-
-.game-screen[hidden] {
-    display: none;
-}
-
-#game-menu {
-    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
 
-#game-play-area {
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.hand {
-    border: solid;
-    height: 15%;
-    width: 50%;
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: space-around;
-    align-content: space-around;
-}
-
-.piece {
-    border-radius: 50%;
-}
-
-.gray {
-    background-color: gray;
-}
-
-.orange {
-    background-color: orange;
-}
-
-.kitten {
-    width: 20px;
-    height: 20px;
-    margin: 10px;
-}
-
-.cat {
-    width: 30px;
-    height: 30px;
-    margin: 5px;
-}
-
-#board {
-    display: flex;
-    flex-direction: column;
-    margin-top: 40px;
-    margin-bottom: 40px;
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-}
-
-.cell {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 1px;
-}
-
-.cell-highlighted {
-    filter: brightness(300%);
-}
-
-.row:nth-child(even) .cell:nth-child(even),
-.row:nth-child(odd) .cell:nth-child(odd) {
-    background-color: blue;
-}
-
-.row:nth-child(even) .cell:nth-child(odd),
-.row:nth-child(odd) .cell:nth-child(even) {
-    background-color: navy;
+canvas {
+    width: 100%;
+    height: 100%;
 }
