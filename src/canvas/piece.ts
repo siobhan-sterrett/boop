@@ -23,7 +23,7 @@ export class Piece {
     }
 
     path(): Path2D {
-        const { x, y } = this.place instanceof CanvasCoordinate ? this.place : this.place.center();
+        const { x, y } = this.place instanceof Cell ? this.place.center() : this.place;
         const radius = this.kind == 'cat' ? 0.45 : 0.30;
 
         const path = new Path2D();

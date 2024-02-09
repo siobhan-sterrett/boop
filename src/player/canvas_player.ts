@@ -7,9 +7,11 @@ export class CanvasPlayer implements Player {
 
     constructor(canvas: Canvas) {
         this.canvas = canvas;
+        this.canvas.drawLoop();
     }
 
     getMove(): Promise<Move> {
+        console.log('Waiting for move from player');
         return this.canvas.getMove();
     }
 

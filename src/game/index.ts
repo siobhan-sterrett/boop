@@ -3,7 +3,6 @@ export {
     BoardCoordinate,
     Boop,
     Cell,
-    GameState,
     Graduate,
     Hand,
     Move,
@@ -16,3 +15,4 @@ export {
 } from './types';
 
 export { Game } from './game';
+export { GameState } from './state';

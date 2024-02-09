@@ -4,7 +4,7 @@
  * being moved by player interaction or animation.
  */
 
-import { PieceOwner } from "../game/piece";
+import { PieceOwner } from "../game";
 import { Cell } from "./cell";
 
 export class Hand {

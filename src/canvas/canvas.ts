@@ -74,9 +74,8 @@ export class Canvas {
 
 
     resize() {
-        const ratio = window.devicePixelRatio;
-        this.element.width = this.element.clientWidth * ratio;
-        this.element.height = this.element.clientHeight * ratio;
+        this.element.width = this.element.clientWidth;
+        this.element.height = this.element.clientHeight;
 
         this.cellLength = this.getCellLength();
 
@@ -121,6 +120,8 @@ export class Canvas {
 
         requestAnimationFrame(() => this.drawLoop());
 
+        this.updateAnimations();
+
         this.ctx.clearRect(-this.element.width / 2, -this.element.height / 2, this.element.width, this.element.height);
 
         this.board.cells.forEach((row, r) => {
@@ -155,10 +156,11 @@ export class Canvas {
                 const dy = target.center().y - y;
                 const distance = Math.sqrt(dy * dy + dx * dx);
                 if (distance > speed) {
-                    piece.place.x = dx * speed / distance;
-                    piece.place.y = dy * speed / distance;
+                    piece.place.x = x + dx * speed / distance;
+                    piece.place.y = y + dy * speed / distance;
                 } else {
                     piece.setPlace(target);
+                    target.piece = piece;
                     finishedIdxs.push(i);
                 }
             }
@@ -178,7 +180,8 @@ export class Canvas {
                     if (cell.piece) {
                         if (this.ctx.isPointInPath(cell.piece.path(), ev.offsetX, ev.offsetY)) {
                             draggedPiece = cell.piece;
-                            draggedPiece.setPlace({ x: ev.x, y: ev.y });
+                            const { x, y } = this.ctx.getTransform().inverse().transformPoint(new DOMPoint(ev.offsetX, ev.offsetY));
+                            draggedPiece.setPlace({ x, y });
                             cell.piece = null;
                         }
                     }
@@ -187,7 +190,8 @@ export class Canvas {
 
             const onPointerMove = (ev: PointerEvent) => {
                 if (draggedPiece) {
-                    draggedPiece.setPlace({ x: ev.y, y: ev.y });
+                    const { x, y } = this.ctx.getTransform().inverse().transformPoint(new DOMPoint(ev.offsetX, ev.offsetY));
+                    draggedPiece.setPlace({ x, y });
                 }
             }
 
@@ -207,8 +211,12 @@ export class Canvas {
                             if (!cell.piece && this.ctx.isPointInPath(cell.path, ev.x, ev.y)) {
                                 cell.piece = draggedPiece;
                                 draggedPiece.setPlace(cell);
+                                draggedPiece = null;
+                                this.element.removeEventListener('pointerdown', onPointerDown);
+                                this.element.removeEventListener('pointermove', onPointerMove);
+                                this.element.removeEventListener('pointerup', onPointerUp);
                                 resolve({
-                                    kind: draggedPiece.kind,
+                                    kind: cell.piece.kind,
                                     place: { r, c }
                                 });
                                 return;
@@ -217,6 +225,7 @@ export class Canvas {
                     }
 
                     const cell = this.playerHand.cells.find((cell) => cell.piece == null)!;
+                    console.log('Animating piece to empty cell in player hand');
                     this.animatePiece(draggedPiece, cell);
                     draggedPiece = null;
                 }
@@ -225,6 +234,7 @@ export class Canvas {
             this.element.addEventListener('pointerdown', onPointerDown);
             this.element.addEventListener('pointermove', onPointerMove);
             this.element.addEventListener('pointerup', onPointerUp);
+
         });
     }
 

@@ -25,13 +25,6 @@ export type Hand = {
     cat: number;
 };
 
-export type GameState = {
-    hands: {
-        [O in PieceOwner]: Hand;
-    };
-    board: Board;
-};
-
 export type Boop = {
     from: BoardCoordinate,
     to?: BoardCoordinate,
