@@ -15,8 +15,8 @@ export class CanvasPlayer implements Player {
         return this.canvas.getMove();
     }
 
-    onBoops(boops: Boop[]): Promise<void> {
-        return this.canvas.doBoops(boops);
+    onBoops(placed: BoardCoordinate, boops: Boop[]): Promise<void> {
+        return this.canvas.doBoops(placed, boops);
     }
 
     getCandidate(candidates: Triplet[]): Promise<Triplet> {

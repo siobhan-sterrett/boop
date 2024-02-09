@@ -2,7 +2,7 @@ import { BoardCoordinate, Boop, GameState, Move, Triplet, Turn } from "../game";
 
 export interface Player {
     getMove(state: GameState): Promise<Move>;
-    onBoops(boops: Boop[]): Promise<void>;
+    onBoops(placed: BoardCoordinate, boops: Boop[]): Promise<void>;
     getCandidate(candidates: Triplet[]): Promise<Triplet>;
     getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate>;
     onOpponentTurn(turn: Turn): Promise<void>;

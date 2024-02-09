@@ -7,10 +7,12 @@ import { PieceKind, PieceOwner } from "../game";
 import { CanvasCoordinate } from "./canvas_coordinate";
 import { Cell } from "./cell";
 
+export type PiecePlace = Cell | CanvasCoordinate;
+
 export class Piece {
     kind: PieceKind;
     owner: PieceOwner;
-    place: Cell | CanvasCoordinate;
+    place: PiecePlace;
 
     constructor(kind: PieceKind, owner: PieceOwner, place: Cell) {
         this.kind = kind;
@@ -18,7 +20,7 @@ export class Piece {
         this.place = place;
     }
 
-    setPlace(place: Cell | CanvasCoordinate) {
+    setPlace(place: PiecePlace) {
         this.place = place;
     }
 

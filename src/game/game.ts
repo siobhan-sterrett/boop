@@ -22,7 +22,7 @@ export class Game {
         const move = await this.player.getMove(new GameState(this.state));
 
         const boops = this.state.placePiece(move);
-        await this.player.onBoops(boops);
+        await this.player.onBoops(move.place, boops);
         return move;
     }
 

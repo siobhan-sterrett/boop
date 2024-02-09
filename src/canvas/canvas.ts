@@ -3,6 +3,7 @@ import { Hand } from "./hand";
 import { Piece } from "./piece";
 import { Cell } from "./cell";
 import { BoardCoordinate, Boop, Move, Triplet, Turn } from "../game";
+import { Animations } from "./animations";
 
 type Colors = {
     pieces: {
@@ -21,11 +22,7 @@ export class Canvas {
     opponentHand: Hand;
     board: Board;
     pieces: Piece[] = [];
-    animations: {
-        piece: Piece;
-        speed: number;
-        target: Cell;
-    }[] = [];
+    animations: Animations = new Animations();
 
     constructor() {
         this.element = document.createElement('canvas');
@@ -120,7 +117,7 @@ export class Canvas {
 
         requestAnimationFrame(() => this.drawLoop());
 
-        this.updateAnimations();
+        this.animations.update();
 
         this.ctx.clearRect(-this.element.width / 2, -this.element.height / 2, this.element.width, this.element.height);
 
@@ -134,41 +131,6 @@ export class Canvas {
         this.pieces.forEach((piece) => {
             this.drawPiece(piece);
         })
-    }
-
-    animatePiece(piece: Piece, target: Cell) {
-        this.animations.push({
-            piece,
-            speed: 0.5,
-            target,
-        })
-    }
-
-    updateAnimations() {
-        const finishedIdxs: number[] = [];
-        this.animations.forEach(({ piece, speed, target }, i) => {
-            if (piece.place instanceof Cell) {
-                finishedIdxs.push(i);
-                return;
-            } else {
-                const { x, y } = piece.place;
-                const dx = target.center().x - x;
-                const dy = target.center().y - y;
-                const distance = Math.sqrt(dy * dy + dx * dx);
-                if (distance > speed) {
-                    piece.place.x = x + dx * speed / distance;
-                    piece.place.y = y + dy * speed / distance;
-                } else {
-                    piece.setPlace(target);
-                    target.piece = piece;
-                    finishedIdxs.push(i);
-                }
-            }
-        });
-
-        for (const i of finishedIdxs.reverse()) {
-            this.animations.splice(i, 1);
-        }
     }
 
     getMove(): Promise<Move> {
@@ -226,7 +188,10 @@ export class Canvas {
 
                     const cell = this.playerHand.cells.find((cell) => cell.piece == null)!;
                     console.log('Animating piece to empty cell in player hand');
-                    this.animatePiece(draggedPiece, cell);
+                    this.animations.animatePiece(draggedPiece, cell.center()).then((piece) => {
+                        piece.setPlace(cell);
+                        cell.piece = piece;
+                    });
                     draggedPiece = null;
                 }
             }
@@ -238,8 +203,35 @@ export class Canvas {
         });
     }
 
-    async doBoops(boops: Boop[]): Promise<void> {
-        // TODO
+    async doBoops(placed: BoardCoordinate, boops: Boop[]): Promise<void> {
+        for (const { from, to } of boops) {
+            const origin = this.board.cells[from.r][from.c]!;
+            const piece = origin.piece!;
+            piece.setPlace(origin.center());
+            origin.piece = null;
+
+            if (to) {
+                const target = this.board.cells[to.r][to.c]!;
+                this.animations.animatePiece(piece, target.center()).then((piece) => {
+                    piece.setPlace(target);
+                    target.piece = piece;
+                });
+            } else {
+                const placedCell = this.board.cells[placed.r][placed.c]!;
+                const target = {
+                    x: 2 * origin.center().x - placedCell.center().x,
+                    y: 2 * origin.center().y - placedCell.center().y,
+                };
+                this.animations.animatePiece(piece, target).then((piece) => {
+                    const hand = piece.owner == 'player' ? this.playerHand : this.opponentHand;
+                    const handCell = hand.cells.find((cell) => cell.piece == null)!;
+                    this.animations.animatePiece(piece, handCell.center()).then((piece) => {
+                        piece.setPlace(handCell);
+                        handCell.piece = piece;
+                    });
+                });
+            }
+        }
     }
 
     async getCandidate(candidates: Triplet[]): Promise<Triplet> {
