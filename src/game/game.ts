@@ -47,7 +47,7 @@ export function newGame(): Game {
     }
 }
 
-type Boop = {
+export type Boop = {
     from: BoardCoordinate,
     to?: BoardCoordinate,
 }
@@ -76,7 +76,7 @@ export function doMove(game: Game, move: Move) {
     }
 }
 
-export function doBoops(game: Game, move: Move, onBoop: (boop: Boop) => void) {
+export async function doBoops(game: Game, move: Move, onBoops: (boops: Boop[]) => Promise<void>) {
     const { hands, board } = game;
     const { kind, place: { r, c } } = move;
 
@@ -86,6 +86,7 @@ export function doBoops(game: Game, move: Move, onBoop: (boop: Boop) => void) {
         [1, -1], [1, 0], [1, 1],
     ]
 
+    const boops: Boop[] = [];
     for (const [dr, dc] of vectors) {
         const neighbor = board[r + dr]?.[c + dc];
         if (neighbor && neighbor.piece) {
@@ -93,7 +94,7 @@ export function doBoops(game: Game, move: Move, onBoop: (boop: Boop) => void) {
                 const target = board[r + 2 * dr]?.[c + 2 * dc];
                 if (target) {
                     if (target.piece == null) {
-                        onBoop({
+                        boops.push({
                             from: { r: r + dr, c: c + dc },
                             to: { r: r + 2 * dr, c: c + 2 * dc },
                         });
@@ -102,7 +103,7 @@ export function doBoops(game: Game, move: Move, onBoop: (boop: Boop) => void) {
                         target.piece = piece;
                     }
                 } else {
-                    onBoop({
+                    boops.push({
                         from: { r: r + dr, c: c + dc },
                         to: undefined
                     });
@@ -113,9 +114,11 @@ export function doBoops(game: Game, move: Move, onBoop: (boop: Boop) => void) {
             }
         }
     };
+
+    return onBoops(boops);
 }
 
-export function doGraduate(game: Game, chooseCandidate: (candidates: GraduationCandidate[]) => GraduationCandidate): GraduationCandidate | undefined {
+export async function doGraduate(game: Game, chooseCandidate: (candidates: GraduationCandidate[]) => Promise<GraduationCandidate>): Promise<GraduationCandidate | undefined> {
     const { hands, board } = game;
 
     const vectors: [number, number][] = [
@@ -145,7 +148,7 @@ export function doGraduate(game: Game, chooseCandidate: (candidates: GraduationC
     }));
 
     if (candidates.length != 0) {
-        const graduate = chooseCandidate(candidates);
+        const graduate = await chooseCandidate(candidates);
         if (
             candidates.find((candidate) =>
                 candidate.every(({ r, c }, i) =>
@@ -165,7 +168,7 @@ export function doGraduate(game: Game, chooseCandidate: (candidates: GraduationC
     }
 }
 
-export function doRetrieve(game: Game, chooseRetrieve: (retrieves: BoardCoordinate[]) => BoardCoordinate): BoardCoordinate | undefined {
+export async function doRetrieve(game: Game, chooseRetrieve: (retrieves: BoardCoordinate[]) => Promise<BoardCoordinate>): Promise<BoardCoordinate | undefined> {
     const { hands, board } = game;
 
     const retrieves: BoardCoordinate[] = [];
@@ -176,7 +179,7 @@ export function doRetrieve(game: Game, chooseRetrieve: (retrieves: BoardCoordina
     }));
 
     if (retrieves.length != 0) {
-        const retrieve = chooseRetrieve(retrieves);
+        const retrieve = await chooseRetrieve(retrieves);
         if (retrieves.find(({ r, c }) => retrieve.r == r && retrieve.c == c)) {
             const cell = board[retrieve.r][retrieve.c];
             const piece = cell.piece!;
@@ -190,17 +193,17 @@ export function doRetrieve(game: Game, chooseRetrieve: (retrieves: BoardCoordina
     }
 }
 
-export function makeMove(
+export async function makeMove(
     game: Game,
     move: Move,
-    onBoop: (boop: Boop) => void,
-    chooseGraduate: (candidates: GraduationCandidate[]) => GraduationCandidate,
-    chooseRetrieve: (retrieves: BoardCoordinate[]) => BoardCoordinate
-): Turn {
+    onBoops: (boops: Boop[]) => Promise<void>,
+    chooseGraduate: (candidates: GraduationCandidate[]) => Promise<GraduationCandidate>,
+    chooseRetrieve: (retrieves: BoardCoordinate[]) => Promise<BoardCoordinate>
+): Promise<Turn> {
     doMove(game, move);
-    doBoops(game, move, onBoop);
-    const graduate = doGraduate(game, chooseGraduate);
-    const retrieve = doRetrieve(game, chooseRetrieve);
+    await doBoops(game, move, onBoops);
+    const graduate = await doGraduate(game, chooseGraduate);
+    const retrieve = await doRetrieve(game, chooseRetrieve);
 
     return {
         ...move,
@@ -213,7 +216,7 @@ export function makeTurn(
     game: Game,
     turn: Turn,
 ) {
-    makeMove(game, turn, () => { }, () => turn.graduate!, () => turn.retrieve!);
+    makeMove(game, turn, async () => { }, async () => turn.graduate!, async () => turn.retrieve!);
 }
 
 export function playerWins(game: Game): boolean {

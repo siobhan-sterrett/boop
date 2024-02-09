@@ -2,8 +2,8 @@
  * A random player simply makes a random move from the available moves.
  */
 
-import { Player } from ".";
-import { BoardCoordinate, Game, GraduationCandidate, Move, PieceKind, Turn, makeTurn, playerWins, makeMove, swapPlayers } from "../game";
+import { Player } from "./player";
+import { BoardCoordinate, Game, Move, PieceKind, Turn, makeTurn, makeMove, swapPlayers } from "../game";
 
 export class RandomPlayer implements Player {
     game: Game;
@@ -12,39 +12,23 @@ export class RandomPlayer implements Player {
         this.game = game;
     }
 
-    *turns(initialTurn?: Turn): Generator<Turn, void, Turn> {
-        if (initialTurn) {
-            makeTurn(this.game, initialTurn);
-            if (playerWins(this.game)) {
-                return;
-            }
-            swapPlayers(this.game);
-        }
+    playerTurn(): Promise<Turn> {
+        const turn = makeMove(
+            this.game,
+            this.#randomMove(),
+            async () => { },
+            async (candidates) => candidates[Math.random() % candidates.length],
+            async (retrieves) => retrieves[Math.random() * retrieves.length]
+        );
 
-        while (true) {
-            let move: Move = this.#randomMove();
-            let turn = makeMove(
-                this.game,
-                move,
-                () => { },
-                (candidates: GraduationCandidate[]) => candidates[Math.random() % candidates.length],
-                (retrieves: BoardCoordinate[]) => retrieves[Math.random() * retrieves.length]
-            );
+        swapPlayers(this.game);
 
-            if (playerWins(this.game)) {
-                return;
-            }
+        return Promise.resolve(turn);
+    }
 
-            swapPlayers(this.game);
-
-            const opponentTurn = yield turn;
-            makeTurn(this.game, opponentTurn);
-            if (playerWins(this.game)) {
-                return;
-            }
-
-            swapPlayers(this.game);
-        }
+    opponentTurn(turn: Turn) {
+        makeTurn(this.game, turn);
+        swapPlayers(this.game);
     }
 
     #randomPieceKind(): PieceKind {
