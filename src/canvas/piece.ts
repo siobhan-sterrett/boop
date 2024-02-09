@@ -3,7 +3,7 @@
  * in a cell, or is being moved by user interaction or by animation.
  */
 
-import { PieceKind, PieceOwner } from "../game/piece";
+import { PieceKind, PieceOwner } from "../game";
 import { CanvasCoordinate } from "./canvas_coordinate";
 import { Cell } from "./cell";
 

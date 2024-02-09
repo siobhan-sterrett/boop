@@ -1,12 +1,11 @@
 import { Player } from "./player";
 import { Canvas } from "../canvas";
-import { BoardCoordinate, Boop, Game, Move, Triplet, Turn } from "../game";
+import { BoardCoordinate, Boop, Move, Triplet, Turn } from "../game";
 
-export class CanvasPlayer extends Player {
+export class CanvasPlayer implements Player {
     canvas: Canvas;
 
-    constructor(game: Game, canvas: Canvas) {
-        super(game);
+    constructor(canvas: Canvas) {
         this.canvas = canvas;
     }
 
@@ -14,7 +13,7 @@ export class CanvasPlayer extends Player {
         return this.canvas.getMove();
     }
 
-    doBoops(boops: Boop[]): Promise<void> {
+    onBoops(boops: Boop[]): Promise<void> {
         return this.canvas.doBoops(boops);
     }
 

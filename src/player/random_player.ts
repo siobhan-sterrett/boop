@@ -3,14 +3,14 @@
  */
 
 import { Player } from "./player";
-import { BoardCoordinate, Game, Move, PieceKind, Triplet } from "../game";
+import { BoardCoordinate, GameState, Move, PieceKind, Triplet } from "../game";
 
-export class RandomPlayer extends Player {
-    getMove(): Promise<Move> {
-        return Promise.resolve(this.#randomMove());
+export class RandomPlayer implements Player {
+    getMove(state: GameState): Promise<Move> {
+        return Promise.resolve(this.#randomMove(state));
     }
 
-    doBoops(): Promise<void> {
+    onBoops(): Promise<void> {
         return Promise.resolve();
     }
 
@@ -30,19 +30,19 @@ export class RandomPlayer extends Player {
 
     onLose() { }
 
-    #randomPieceKind(): PieceKind {
-        if (this.game.hands.player.kitten == 0) {
+    #randomPieceKind(state: GameState): PieceKind {
+        if (state.hands.player.kitten == 0) {
             return 'cat';
-        } else if (this.game.hands.player.cat == 0) {
+        } else if (state.hands.player.cat == 0) {
             return 'kitten';
         } else {
             return Math.random() > 0.5 ? 'cat' : 'kitten';
         }
     }
 
-    #randomEmptyCell(): BoardCoordinate {
+    #randomEmptyCell(state: GameState): BoardCoordinate {
         const emptyCells: BoardCoordinate[] = [];
-        this.game.board.forEach((row, r) => {
+        state.board.forEach((row, r) => {
             row.forEach((cell, c) => {
                 if (cell.piece == null) {
                     emptyCells.push({ r, c });
@@ -52,10 +52,10 @@ export class RandomPlayer extends Player {
         return emptyCells[Math.random() * emptyCells.length];
     }
 
-    #randomMove(): Move {
+    #randomMove(state: GameState): Move {
         return {
-            kind: this.#randomPieceKind(),
-            place: this.#randomEmptyCell(),
+            kind: this.#randomPieceKind(state),
+            place: this.#randomEmptyCell(state),
         }
     }
 }

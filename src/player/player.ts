@@ -1,48 +1,11 @@
-import { BoardCoordinate, Boop, Game, Move, Triplet, Turn, makeMove, makeTurn, swapPlayers, winningTriplet } from "../game";
+import { BoardCoordinate, Boop, GameState, Move, Triplet, Turn } from "../game";
 
-export abstract class Player {
-    game: Game;
-
-    constructor(game: Game) {
-        this.game = game;
-    }
-
-    abstract getMove(): Promise<Move>;
-    abstract doBoops(boops: Boop[]): Promise<void>;
-    abstract getCandidate(candidates: Triplet[]): Promise<Triplet>;
-    abstract getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate>;
-    abstract onOpponentTurn(turn: Turn): Promise<void>;
-    abstract onWin(triplet: Triplet): void;
-    abstract onLose(triplet: Triplet): void;
-
-    async playerTurn(): Promise<Turn> {
-        const turn = await makeMove(
-            this.game,
-            await this.getMove(),
-            (boops) => this.doBoops(boops),
-            (candidates) => this.getCandidate(candidates),
-            (retrieves) => this.getRetrieve(retrieves)
-        );
-
-        const win = winningTriplet(this.game);
-        if (win) {
-            this.onWin(win);
-        }
-
-        swapPlayers(this.game);
-
-        return turn;
-    }
-
-    async opponentTurn(turn: Turn) {
-        makeTurn(this.game, turn);
-        await this.onOpponentTurn(turn);
-
-        const win = winningTriplet(this.game);
-        if (win) {
-            this.onLose(win);
-        }
-
-        swapPlayers(this.game);
-    }
+export interface Player {
+    getMove(state: GameState): Promise<Move>;
+    onBoops(boops: Boop[]): Promise<void>;
+    getCandidate(candidates: Triplet[]): Promise<Triplet>;
+    getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate>;
+    onOpponentTurn(turn: Turn): Promise<void>;
+    onWin(triplet: Triplet): void;
+    onLose(triplet: Triplet): void;
 }

@@ -1,3 +1,18 @@
-export { BoardCoordinate, Boop, Game, makeTurn, makeMove, swapPlayers, winningTriplet } from "./game";
-export { PieceKind } from "./piece";
-export { Move, Triplet, Turn } from "./move";
+export {
+    Board,
+    BoardCoordinate,
+    Boop,
+    Cell,
+    GameState,
+    Graduate,
+    Hand,
+    Move,
+    Piece,
+    PieceKind,
+    PieceOwner,
+    Retrieve,
+    Triplet,
+    Turn,
+} from './types';
+
+export { Game } from './game';
