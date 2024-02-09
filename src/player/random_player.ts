@@ -3,33 +3,32 @@
  */
 
 import { Player } from "./player";
-import { BoardCoordinate, Game, Move, PieceKind, Turn, makeTurn, makeMove, swapPlayers } from "../game";
+import { BoardCoordinate, Game, Move, PieceKind, Triplet } from "../game";
 
-export class RandomPlayer implements Player {
-    game: Game;
-
-    constructor(game: Game) {
-        this.game = game;
+export class RandomPlayer extends Player {
+    getMove(): Promise<Move> {
+        return Promise.resolve(this.#randomMove());
     }
 
-    playerTurn(): Promise<Turn> {
-        const turn = makeMove(
-            this.game,
-            this.#randomMove(),
-            async () => { },
-            async (candidates) => candidates[Math.random() % candidates.length],
-            async (retrieves) => retrieves[Math.random() * retrieves.length]
-        );
-
-        swapPlayers(this.game);
-
-        return Promise.resolve(turn);
+    doBoops(): Promise<void> {
+        return Promise.resolve();
     }
 
-    opponentTurn(turn: Turn) {
-        makeTurn(this.game, turn);
-        swapPlayers(this.game);
+    getCandidate(candidates: Triplet[]): Promise<Triplet> {
+        return Promise.resolve(candidates[Math.random() % candidates.length]);
     }
+
+    getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate> {
+        return Promise.resolve(retrieves[Math.random() * retrieves.length]);
+    }
+
+    onOpponentTurn(): Promise<void> {
+        return Promise.resolve();
+    }
+
+    onWin() { }
+
+    onLose() { }
 
     #randomPieceKind(): PieceKind {
         if (this.game.hands.player.kitten == 0) {

@@ -6,10 +6,10 @@ export type Move = {
     place: BoardCoordinate;
 }
 
-export type GraduationCandidate = [BoardCoordinate, BoardCoordinate, BoardCoordinate];
+export type Triplet = [BoardCoordinate, BoardCoordinate, BoardCoordinate];
 
 export type Graduate = {
-    graduate: GraduationCandidate;
+    graduate: Triplet;
 }
 
 export type Retrieve = {

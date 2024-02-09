@@ -1,31 +1,40 @@
 import { Player } from "./player";
 import { Canvas } from "../canvas";
-import { Game, Turn, makeMove, swapPlayers } from "../game";
+import { BoardCoordinate, Boop, Game, Move, Triplet, Turn } from "../game";
 
-export class CanvasPlayer implements Player {
-    game: Game;
+export class CanvasPlayer extends Player {
     canvas: Canvas;
 
     constructor(game: Game, canvas: Canvas) {
-        this.game = game;
+        super(game);
         this.canvas = canvas;
     }
 
-    async playerTurn(): Promise<Turn> {
-        const turn = await makeMove(
-            this.game,
-            await this.canvas.getMove(),
-            (boops) => this.canvas.doBoops(boops),
-            (candidates) => this.canvas.getCandidate(candidates),
-            (retrieves) => this.canvas.getRetrieve(retrieves),
-        )
-
-        swapPlayers(this.game);
-
-        return turn;
+    getMove(): Promise<Move> {
+        return this.canvas.getMove();
     }
 
-    async opponentTurn(turn: Turn) {
+    doBoops(boops: Boop[]): Promise<void> {
+        return this.canvas.doBoops(boops);
+    }
 
+    getCandidate(candidates: Triplet[]): Promise<Triplet> {
+        return this.canvas.getCandidate(candidates);
+    }
+
+    getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate> {
+        return this.canvas.getRetrieve(retrieves);
+    }
+
+    onOpponentTurn(turn: Turn): Promise<void> {
+        return this.canvas.onOpponentTurn(turn);
+    }
+
+    onWin(triplet: Triplet): void {
+        return this.canvas.onWin(triplet);
+    }
+
+    onLose(triplet: Triplet): void {
+        return this.canvas.onLose(triplet);
     }
 }

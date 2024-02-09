@@ -1,4 +1,4 @@
-import { GraduationCandidate, Move, Turn } from "./move";
+import { Triplet, Move, Turn } from "./move";
 import { Piece, PieceOwner } from "./piece"
 
 export type BoardCoordinate = {
@@ -118,7 +118,7 @@ export async function doBoops(game: Game, move: Move, onBoops: (boops: Boop[]) =
     return onBoops(boops);
 }
 
-export async function doGraduate(game: Game, chooseCandidate: (candidates: GraduationCandidate[]) => Promise<GraduationCandidate>): Promise<GraduationCandidate | undefined> {
+export async function doGraduate(game: Game, chooseCandidate: (candidates: Triplet[]) => Promise<Triplet>): Promise<Triplet | undefined> {
     const { hands, board } = game;
 
     const vectors: [number, number][] = [
@@ -126,7 +126,7 @@ export async function doGraduate(game: Game, chooseCandidate: (candidates: Gradu
         [0, -1]
     ]
 
-    const candidates: GraduationCandidate[] = [];
+    const candidates: Triplet[] = [];
     board.forEach((row, r) => row.forEach((cell, c) => {
         if (cell.piece?.owner == 'player') {
             for (const [dr, dc] of vectors) {
@@ -197,7 +197,7 @@ export async function makeMove(
     game: Game,
     move: Move,
     onBoops: (boops: Boop[]) => Promise<void>,
-    chooseGraduate: (candidates: GraduationCandidate[]) => Promise<GraduationCandidate>,
+    chooseGraduate: (candidates: Triplet[]) => Promise<Triplet>,
     chooseRetrieve: (retrieves: BoardCoordinate[]) => Promise<BoardCoordinate>
 ): Promise<Turn> {
     doMove(game, move);
@@ -219,7 +219,7 @@ export function makeTurn(
     makeMove(game, turn, async () => { }, async () => turn.graduate!, async () => turn.retrieve!);
 }
 
-export function playerWins(game: Game): boolean {
+export function winningTriplet(game: Game): Triplet | undefined {
     const { board } = game;
     const vectors: [number, number][] = [
         [-1, -1], [-1, 0], [-1, 1],
@@ -235,14 +235,18 @@ export function playerWins(game: Game): boolean {
                 if (left?.piece?.owner == 'player' && right?.piece?.owner == 'player') {
                     const kinds = [left, cell, right].map((cell) => cell.piece?.kind);
                     if (!kinds.every((kind) => kind == 'cat')) {
-                        return true;
+                        return [
+                            { r: r + dr, c: c + dc },
+                            { r, c },
+                            { r: r - dr, c: c - dc },
+                        ];
                     }
                 }
             }
         }
     }));
 
-    return false;
+    return undefined;
 }
 
 export function swapPlayers(game: Game) {

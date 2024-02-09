@@ -2,8 +2,7 @@ import { Board } from "./board";
 import { Hand } from "./hand";
 import { Piece } from "./piece";
 import { Cell } from "./cell";
-import { BoardCoordinate, Boop, GraduationCandidate, Move } from "../game";
-import { CanvasCoordinate } from "./canvas_coordinate";
+import { BoardCoordinate, Boop, Move, Triplet, Turn } from "../game";
 
 type Colors = {
     pieces: {
@@ -229,15 +228,29 @@ export class Canvas {
         });
     }
 
-    doBoops(boops: Boop[]): Promise<void> {
-
+    async doBoops(boops: Boop[]): Promise<void> {
+        // TODO
     }
 
-    getCandidate(candidates: GraduationCandidate[]): Promise<GraduationCandidate> {
-
+    async getCandidate(candidates: Triplet[]): Promise<Triplet> {
+        // TODO
+        return candidates[0];
     }
 
-    getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate> {
+    async getRetrieve(retrieves: BoardCoordinate[]): Promise<BoardCoordinate> {
+        // TODO
+        return retrieves[0];
+    }
 
+    async onOpponentTurn(turn: Turn): Promise<void> {
+        // TODO
+    }
+
+    onWin(triplet: Triplet): void {
+        // TODO
+    }
+
+    onLose(triplet: Triplet): void {
+        // TODO
     }
 }
