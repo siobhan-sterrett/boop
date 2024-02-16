@@ -107,7 +107,7 @@ function reduceState(event: GameEvent, state: GameState): GameState {
     } else if (event.eventKind == 'place-piece') {
         const { pieceKind, target } = event;
         const cell = board.get(target)!;
-        hands[turn][pieceKind] += 1;
+        hands[turn][pieceKind] -= 1;
         cell.piece = { owner: turn, kind: pieceKind };
         boop(state, target);
     } else if (event.eventKind == 'graduate-triplet') {
