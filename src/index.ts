@@ -1,12 +1,12 @@
-import { Canvas } from "./canvas";
-import { Game } from "./game";
-import { CanvasPlayer, RandomPlayer } from "./player";
+import { App } from './app/app';
 
-const canvas = new Canvas();
-document.body.appendChild(canvas.element);
+function isCanvasElement(element: HTMLElement | null): element is HTMLCanvasElement {
+    return element?.tagName == 'CANVAS';
+}
 
-const player = new CanvasPlayer(canvas);
-const opponent = new RandomPlayer();
-const game = new Game([player, opponent]);
-
-game.run();
+const canvasElement = document.getElementById('app-canvas');
+if (isCanvasElement(canvasElement)) {
+    new App(canvasElement).run();
+} else {
+    throw new Error('Cannot find canvas element');
+}
