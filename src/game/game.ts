@@ -1,4 +1,4 @@
-import { Board, BoardCoordinate } from './board';
+import { Board, BoardCoordinate, Cell } from './board';
 import { GameEvent } from './event';
 import { PieceOwner } from './piece';
 
@@ -9,22 +9,22 @@ type Hand = {
     kitten: number;
 }
 
-type GameState = {
+type GameState<TCell extends Cell> = {
     turn: PieceOwner;
-    board: Board;
+    board: Board<TCell>;
     hands: {
         player: Hand;
         opponent: Hand;
     }
 };
 
-type Game = {
+type Game<TCell extends Cell> = {
     history: GameEvent[];
-    get state(): GameState;
+    get state(): GameState<TCell>;
 }
 
-function newGame(turn: PieceOwner): Game {
-    const board = new Board();
+function newGame<TCell extends Cell>(turn: PieceOwner, Cell: new () => TCell): Game<TCell> {
+    const board = new Board(Cell);
     const hands = {
         player: { kitten: 8, cat: 0 },
         opponent: { kitten: 8, cat: 0 },
@@ -35,13 +35,13 @@ function newGame(turn: PieceOwner): Game {
             eventKind: 'begin-turn',
             turn,
         }],
-        get state(): GameState {
+        get state(): GameState<TCell> {
             return { turn, board, hands };
         }
     };
 }
 
-function* getTriplets(state: GameState): Generator<Triplet> {
+function* getTriplets<TCell extends Cell>(state: GameState<TCell>): Generator<Triplet> {
     const { turn, board } = state;
 
     for (const [{ r, c }, cell] of board) {
@@ -61,11 +61,11 @@ function* getTriplets(state: GameState): Generator<Triplet> {
     }
 }
 
-function isWinningTriplet(board: Board, triplet: Triplet): boolean {
+function isWinningTriplet<TCell extends Cell>(board: Board<TCell>, triplet: Triplet): boolean {
     return triplet.every((coordinate) => board.get(coordinate)?.piece?.kind == 'cat');
 }
 
-function isWinningState(state: GameState): boolean {
+function isWinningState<TCell extends Cell>(state: GameState<TCell>): boolean {
     return Array.from(getTriplets(state)).some((triplet) => isWinningTriplet(state.board, triplet));
 }
 
@@ -81,13 +81,13 @@ function isHandEmpty(hand: Hand): boolean {
     return hand.cat == 0 && hand.kitten == 0;
 }
 
-function reduce(event: GameEvent, game: Game): Game {
+function reduce<TCell extends Cell>(event: GameEvent, game: Game<TCell>): Game<TCell> {
     const { history, state } = game;
 
     if (isLegal(event, game)) {
         return {
             history: history.concat(event),
-            get state(): GameState {
+            get state(): GameState<TCell> {
                 return reduceState(event, state);
             }
         }
@@ -96,7 +96,7 @@ function reduce(event: GameEvent, game: Game): Game {
     }
 }
 
-function reduceState(event: GameEvent, state: GameState): GameState {
+function reduceState<TCell extends Cell>(event: GameEvent, state: GameState<TCell>): GameState<TCell> {
     // Precondition: event is legal
 
     let { turn } = state;
@@ -131,7 +131,7 @@ function reduceState(event: GameEvent, state: GameState): GameState {
     };
 }
 
-function boop(state: GameState, { r, c }: BoardCoordinate) {
+function boop<TCell extends Cell>(state: GameState<TCell>, { r, c }: BoardCoordinate) {
     const { board, hands } = state;
 
     const pieceKind = board.get({ r, c })!.piece!.kind;
@@ -161,7 +161,7 @@ function boop(state: GameState, { r, c }: BoardCoordinate) {
     }
 }
 
-function isLegal(event: GameEvent, game: Game): boolean {
+function isLegal<TCell extends Cell>(event: GameEvent, game: Game<TCell>): boolean {
     const { history, state } = game;
 
     const previousEvent = history.at(-1);

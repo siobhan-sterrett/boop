@@ -2,8 +2,8 @@ import { Piece } from './piece';
 
 export type BoardCoordinate = { r: number, c: number };
 
-export type Cell = {
-    piece: Piece | null
+export class Cell {
+    piece: Piece | null = null;
 };
 
 function iterMap<T, U>(iterator: Iterator<T>, callbackFn: (value: T) => U): IterableIterator<U> {
@@ -21,14 +21,14 @@ function iterMap<T, U>(iterator: Iterator<T>, callbackFn: (value: T) => U): Iter
     return it;
 }
 
-export class Board implements ReadonlyMap<BoardCoordinate, Cell> {
-    #entries: Map<number, [BoardCoordinate, Cell]> = new Map();
+export class Board<TCell extends Cell> implements ReadonlyMap<BoardCoordinate, TCell> {
+    #entries: Map<number, [BoardCoordinate, TCell]> = new Map();
 
-    constructor() {
+    constructor(Cell: new () => TCell) {
         for (let r = 0; r < 6; ++r) {
             for (let c = 0; c < 6; ++c) {
                 const coordinate = { r, c };
-                const cell = { piece: null };
+                const cell = new Cell();
                 this.#entries.set(Board.#hash(coordinate), [coordinate, cell]);
             }
         }
@@ -38,13 +38,13 @@ export class Board implements ReadonlyMap<BoardCoordinate, Cell> {
         return r * 8 + c;
     }
 
-    forEach(callbackFn: (value: Cell, key: BoardCoordinate, map: ReadonlyMap<BoardCoordinate, Cell>) => void) {
+    forEach(callbackFn: (value: TCell, key: BoardCoordinate, map: ReadonlyMap<BoardCoordinate, TCell>) => void) {
         this.#entries.forEach(([key, value]) => {
             callbackFn(value, key, this)
         })
     }
 
-    get(key: BoardCoordinate): Cell | undefined {
+    get(key: BoardCoordinate): TCell | undefined {
         return this.#entries.get(Board.#hash(key))?.[1];
     }
 
@@ -56,11 +56,11 @@ export class Board implements ReadonlyMap<BoardCoordinate, Cell> {
         return this.#entries.size;
     }
 
-    [Symbol.iterator](): IterableIterator<[BoardCoordinate, Cell]> {
+    [Symbol.iterator](): IterableIterator<[BoardCoordinate, TCell]> {
         return this.entries();
     }
 
-    entries(): IterableIterator<[BoardCoordinate, Cell]> {
+    entries(): IterableIterator<[BoardCoordinate, TCell]> {
         return this.#entries.values();
     }
 
@@ -68,7 +68,7 @@ export class Board implements ReadonlyMap<BoardCoordinate, Cell> {
         return iterMap(this.entries(), ([key, _]) => key);
     }
 
-    values(): IterableIterator<Cell> {
+    values(): IterableIterator<TCell> {
         return iterMap(this.entries(), ([_, value]) => value);
     }
 }
