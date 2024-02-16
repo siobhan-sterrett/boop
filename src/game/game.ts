@@ -1,33 +1,29 @@
 import { Board, BoardCoordinate, Cell } from './board';
 import { GameEvent } from './event';
+import { Hand } from './hand';
 import { PieceOwner } from './piece';
 
 export type Triplet = [BoardCoordinate, BoardCoordinate, BoardCoordinate];
 
-type Hand = {
-    cat: number;
-    kitten: number;
-}
-
-type GameState<TCell extends Cell> = {
+export type GameState<TCell extends Cell, THand extends Hand> = {
     turn: PieceOwner;
     board: Board<TCell>;
     hands: {
-        player: Hand;
-        opponent: Hand;
+        player: THand;
+        opponent: THand;
     }
 };
 
-type Game<TCell extends Cell> = {
+export type Game<TCell extends Cell, THand extends Hand> = {
     history: GameEvent[];
-    get state(): GameState<TCell>;
+    get state(): GameState<TCell, THand>;
 }
 
-function newGame<TCell extends Cell>(turn: PieceOwner, Cell: new () => TCell): Game<TCell> {
+export function newGame<TCell extends Cell, THand extends Hand>(turn: PieceOwner, Cell: new () => TCell, Hand: new (owner: PieceOwner) => THand): Game<TCell, THand> {
     const board = new Board(Cell);
     const hands = {
-        player: { kitten: 8, cat: 0 },
-        opponent: { kitten: 8, cat: 0 },
+        player: new Hand('player'),
+        opponent: new Hand('opponent'),
     };
 
     return {
@@ -35,13 +31,13 @@ function newGame<TCell extends Cell>(turn: PieceOwner, Cell: new () => TCell): G
             eventKind: 'begin-turn',
             turn,
         }],
-        get state(): GameState<TCell> {
+        get state(): GameState<TCell, THand> {
             return { turn, board, hands };
         }
     };
 }
 
-function* getTriplets<TCell extends Cell>(state: GameState<TCell>): Generator<Triplet> {
+export function* getTriplets<TCell extends Cell, THand extends Hand>(state: GameState<TCell, THand>): Generator<Triplet> {
     const { turn, board } = state;
 
     for (const [{ r, c }, cell] of board) {
@@ -61,15 +57,15 @@ function* getTriplets<TCell extends Cell>(state: GameState<TCell>): Generator<Tr
     }
 }
 
-function isWinningTriplet<TCell extends Cell>(board: Board<TCell>, triplet: Triplet): boolean {
+export function isWinningTriplet<TCell extends Cell>(board: Board<TCell>, triplet: Triplet): boolean {
     return triplet.every((coordinate) => board.get(coordinate)?.piece?.kind == 'cat');
 }
 
-function isWinningState<TCell extends Cell>(state: GameState<TCell>): boolean {
+export function isWinningState<TCell extends Cell, THand extends Hand>(state: GameState<TCell, THand>): boolean {
     return Array.from(getTriplets(state)).some((triplet) => isWinningTriplet(state.board, triplet));
 }
 
-function tripletEq(a: Triplet, b: Triplet): boolean {
+export function tripletEq(a: Triplet, b: Triplet): boolean {
     return a[1] == b[1] && (
         a[0] == b[0] && a[2] == b[2]
     ) || (
@@ -77,17 +73,13 @@ function tripletEq(a: Triplet, b: Triplet): boolean {
         );
 }
 
-function isHandEmpty(hand: Hand): boolean {
-    return hand.cat == 0 && hand.kitten == 0;
-}
-
-function reduce<TCell extends Cell>(event: GameEvent, game: Game<TCell>): Game<TCell> {
+export function reduce<TCell extends Cell, THand extends Hand>(event: GameEvent, game: Game<TCell, THand>): Game<TCell, THand> {
     const { history, state } = game;
 
     if (isLegal(event, game)) {
         return {
             history: history.concat(event),
-            get state(): GameState<TCell> {
+            get state(): GameState<TCell, THand> {
                 return reduceState(event, state);
             }
         }
@@ -96,7 +88,7 @@ function reduce<TCell extends Cell>(event: GameEvent, game: Game<TCell>): Game<T
     }
 }
 
-function reduceState<TCell extends Cell>(event: GameEvent, state: GameState<TCell>): GameState<TCell> {
+export function reduceState<TCell extends Cell, THand extends Hand>(event: GameEvent, state: GameState<TCell, THand>): GameState<TCell, THand> {
     // Precondition: event is legal
 
     let { turn } = state;
@@ -107,20 +99,20 @@ function reduceState<TCell extends Cell>(event: GameEvent, state: GameState<TCel
     } else if (event.eventKind == 'place-piece') {
         const { pieceKind, target } = event;
         const cell = board.get(target)!;
-        hands[turn][pieceKind] -= 1;
-        cell.piece = { owner: turn, kind: pieceKind };
+        const piece = hands[turn].takePiece(pieceKind);
+        cell.piece = piece;
         boop(state, target);
     } else if (event.eventKind == 'graduate-triplet') {
         const { triplet } = event;
         for (const place of triplet) {
             const cell = board.get(place)!;
             cell.piece = null;
-            hands[turn].cat += 1;
+            hands[turn].addPiece('cat');
         }
     } else if (event.eventKind == 'retrieve-piece') {
         const { target } = event;
         const cell = board.get(target)!;
-        hands[turn][cell.piece!.kind] += 1;
+        hands[turn].addPiece(cell.piece!.kind);
         cell.piece = null;
     }
 
@@ -131,7 +123,7 @@ function reduceState<TCell extends Cell>(event: GameEvent, state: GameState<TCel
     };
 }
 
-function boop<TCell extends Cell>(state: GameState<TCell>, { r, c }: BoardCoordinate) {
+export function boop<TCell extends Cell, THand extends Hand>(state: GameState<TCell, THand>, { r, c }: BoardCoordinate) {
     const { board, hands } = state;
 
     const pieceKind = board.get({ r, c })!.piece!.kind;
@@ -153,7 +145,7 @@ function boop<TCell extends Cell>(state: GameState<TCell>, { r, c }: BoardCoordi
                         neighbor.piece = null;
                     }
                 } else {
-                    hands[neighbor.piece.owner][neighbor.piece.kind] += 1;
+                    hands[neighbor.piece.owner].addPiece(neighbor.piece.kind);
                     neighbor.piece = null;
                 }
             }
@@ -161,7 +153,7 @@ function boop<TCell extends Cell>(state: GameState<TCell>, { r, c }: BoardCoordi
     }
 }
 
-function isLegal<TCell extends Cell>(event: GameEvent, game: Game<TCell>): boolean {
+export function isLegal<TCell extends Cell, THand extends Hand>(event: GameEvent, game: Game<TCell, THand>): boolean {
     const { history, state } = game;
 
     const previousEvent = history.at(-1);
@@ -174,7 +166,7 @@ function isLegal<TCell extends Cell>(event: GameEvent, game: Game<TCell>): boole
         if (event.eventKind == 'place-piece') {
             const { pieceKind, target } = event;
 
-            if (state.hands[turn][pieceKind] > 0) {
+            if (state.hands[turn].hasPiece(pieceKind)) {
                 const cell = state.board.get(target);
                 if (cell) {
                     if (cell.piece) {
@@ -202,7 +194,7 @@ function isLegal<TCell extends Cell>(event: GameEvent, game: Game<TCell>): boole
             // Any event is illegal
         } else {
             const canGraduate = (triplets.length != 0);
-            const canRetrieve = isHandEmpty(state.hands[state.turn]);
+            const canRetrieve = state.hands[state.turn].hasPiece();
 
             if (event.eventKind == 'graduate-triplet') {
                 if (canGraduate) {
