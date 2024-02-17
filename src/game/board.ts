@@ -2,6 +2,10 @@ import { Piece } from './piece';
 
 export type BoardCoordinate = { r: number, c: number };
 
+export function boardCoordinateEq(a: BoardCoordinate, b: BoardCoordinate): boolean {
+    return a.r == b.r && a.c == b.c;
+}
+
 export class Cell {
     piece: Piece | null = null;
 };
@@ -21,6 +25,7 @@ function iterMap<T, U>(iterator: Iterator<T>, callbackFn: (value: T) => U): Iter
     return it;
 }
 
+// TODO: This really only needs two functions: get(), and [Symbol.iterator]().
 export class Board<TCell extends Cell> implements ReadonlyMap<BoardCoordinate, TCell> {
     #entries: Map<number, [BoardCoordinate, TCell]> = new Map();
 

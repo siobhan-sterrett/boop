@@ -1,5 +1,5 @@
 import { Board, BoardCoordinate, Cell } from './board';
-import { GameEvent } from './event';
+import { Boop, GameEvent, boopEq } from './event';
 import { Hand } from './hand';
 import { PieceOwner } from './piece';
 
@@ -62,7 +62,8 @@ export function isWinningTriplet<TCell extends Cell>(board: Board<TCell>, triple
 }
 
 export function isWinningState<TCell extends Cell, THand extends Hand>(state: GameState<TCell, THand>): boolean {
-    return Array.from(getTriplets(state)).some((triplet) => isWinningTriplet(state.board, triplet));
+    return Array.from(getTriplets(state)).some((triplet) => isWinningTriplet(state.board, triplet)) ||
+        Array.from(state.board.values()).filter((cell) => cell.piece?.kind == 'cat').length == 8;
 }
 
 export function tripletEq(a: Triplet, b: Triplet): boolean {
@@ -101,7 +102,19 @@ export function reduceState<TCell extends Cell, THand extends Hand>(event: GameE
         const cell = board.get(target)!;
         const piece = hands[turn].takePiece(pieceKind);
         cell.piece = piece;
-        boop(state, target);
+    } else if (event.eventKind == 'boop') {
+        const { boops } = event;
+        for (const { origin, target } of boops) {
+            const originCell = board.get(origin)!;
+            const piece = originCell.piece!;
+            originCell.piece = null;
+            if (target) {
+                const targetCell = board.get(target)!;
+                targetCell.piece = piece;
+            } else {
+                hands[piece.owner].addPiece(piece.kind);
+            }
+        }
     } else if (event.eventKind == 'graduate-triplet') {
         const { triplet } = event;
         for (const place of triplet) {
@@ -123,10 +136,10 @@ export function reduceState<TCell extends Cell, THand extends Hand>(event: GameE
     };
 }
 
-export function boop<TCell extends Cell, THand extends Hand>(state: GameState<TCell, THand>, { r, c }: BoardCoordinate) {
-    const { board, hands } = state;
-
+export function calculateBoops<TCell extends Cell>(board: Board<TCell>, { r, c }: BoardCoordinate): Boop[] {
     const pieceKind = board.get({ r, c })!.piece!.kind;
+
+    const boops: Boop[] = [];
 
     for (const [dr, dc] of [
         [-1, -1], [-1, 0], [-1, 1],
@@ -141,16 +154,21 @@ export function boop<TCell extends Cell, THand extends Hand>(state: GameState<TC
                 const target = board.get(targetCoordinate);
                 if (target) {
                     if (!target.piece) {
-                        target.piece = neighbor.piece;
-                        neighbor.piece = null;
+                        boops.push({
+                            origin: neighborCoordinate,
+                            target: targetCoordinate,
+                        });
                     }
                 } else {
-                    hands[neighbor.piece.owner].addPiece(neighbor.piece.kind);
-                    neighbor.piece = null;
+                    boops.push({
+                        origin: neighborCoordinate
+                    });
                 }
             }
         }
     }
+
+    return boops;
 }
 
 export function isLegal<TCell extends Cell, THand extends Hand>(event: GameEvent, game: Game<TCell, THand>): boolean {
@@ -186,6 +204,25 @@ export function isLegal<TCell extends Cell, THand extends Hand>(event: GameEvent
     }
 
     if (previousEvent.eventKind == 'place-piece') {
+        if (event.eventKind == 'boop') {
+            const { boops } = event;
+            const calculatedBoops = calculateBoops(state.board, previousEvent.target);
+
+            if (boops.every((boop) => calculatedBoops.find((calculatedBoop) => boopEq(boop, calculatedBoop)))) {
+                if (calculatedBoops.every((calculatedBoop) => boops.find((boop) => boopEq(calculatedBoop, boop)))) {
+                    return true;
+                } else {
+                    // Missing boop
+                }
+            } else {
+                // Extra boop
+            }
+        } else {
+            // Must boop after placing a piece
+        }
+    }
+
+    if (previousEvent.eventKind == 'boop') {
         const triplets = Array.from(getTriplets(state));
 
         const gameOver = triplets.some((triplet) => isWinningTriplet(state.board, triplet));
