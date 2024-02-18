@@ -22,8 +22,4 @@ export class Hand extends CellMap {
             return [{ r, c }, new Cell(rect)];
         }));
     }
-
-    isEmpty(): boolean {
-        return Array.from(this.values()).every((cell) => cell.isEmpty());
-    }
 }

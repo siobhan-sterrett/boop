@@ -48,30 +48,6 @@ export class Cell {
         return path;
     }
 
-    ifHasPiece(callbackFn: (piece: Piece) => void) {
-        if (this.#piece) {
-            callbackFn(this.#piece);
-        }
-    }
-
-    ifEmpty(callbackFn: () => void) {
-        if (!this.#piece) {
-            callbackFn();
-        }
-    }
-
-    isEmpty(): boolean {
-        return !this.hasPiece();
-    }
-
-    hasPiece(): boolean {
-        return this.#piece != null;
-    }
-
-    getPiece(): Piece | null {
-        return this.#piece;
-    }
-
     takePiece(): Piece | null {
         const piece = this.#piece;
         this.#piece = null;

@@ -1,27 +1,28 @@
+import { Triplet, getBoops, getGraduationCandidates, getRetrievalCandidates, getWinningTriplets } from "../../board";
 import { Canvas } from "../canvas";
-import { Board, Triplet } from "./board";
+import { Board } from "./board";
 import { Cell } from "./cell";
 import { CellCoordinate } from "./cell_map";
 import { Gutter } from "./gutter";
 import { Hand } from "./hand";
-import { Piece, PieceKind, PieceOwner } from "./piece";
+import { Piece, PieceOwner } from "./piece";
 import { PieceAnimations } from "./piece_animations";
 import { DEFAULT_THEME, Theme } from "./theme";
 
 export class Scene {
-    canvas: Canvas;
-    board: Board = new Board();
-    gutter: Gutter = new Gutter();
-    hands: Record<PieceOwner, Hand> = {
+    readonly canvas: Canvas;
+    readonly board: Board = new Board();
+    readonly gutter: Gutter = new Gutter();
+    readonly hands: Record<PieceOwner, Hand> = {
         player: new Hand('player'),
         opponent: new Hand('opponent'),
     };
-    draggingCell: Cell = new Cell(new DOMRect(0, 0, 1, 1));
-    tripletOvals: Path2D[] = [];
-    theme: Theme = DEFAULT_THEME;
-    pieces: Piece[] = [];
+    readonly draggingCell: Cell = new Cell(new DOMRect(0, 0, 1, 1));
+    readonly tripletOvals: Path2D[] = [];
+    readonly theme: Theme = DEFAULT_THEME;
+    readonly pieces: Piece[] = [];
+    readonly pieceAnimations: PieceAnimations = new PieceAnimations();
     message: string = "";
-    pieceAnimations: PieceAnimations = new PieceAnimations();
 
     constructor(canvas: Canvas) {
         this.canvas = canvas;
@@ -72,20 +73,20 @@ export class Scene {
     runPlacePiece() {
         this.message = 'Drag a piece to the board';
 
-        const { clear } = this.canvas.addEventListeners({
+        const { removeListeners } = this.canvas.addEventListeners({
             'pointerdown': (ev: PointerEvent) => {
-                this.draggingCell.ifHasPiece((piece) => {
-                    this.draggingCell.takePiece();
+                const piece = this.draggingCell.takePiece();
+                if (piece) {
                     this.pieceAnimations.moveTo(piece, piece.home);
-                });
+                }
 
                 for (const cell of this.hands.player.values()) {
-                    cell.ifHasPiece((piece) => {
-                        if (this.canvas.isPointInPath(piece.path, ev.offsetX, ev.offsetY)) {
-                            cell.takePiece();
+                    if (cell.piece) {
+                        if (this.canvas.isPointInPath(cell.piece.path, ev.offsetX, ev.offsetY)) {
+                            const piece = cell.takePiece()!;
                             this.pieceAnimations.moveTo(piece, this.draggingCell);
                         }
-                    });
+                    }
                 }
             },
             'pointermove': (ev: PointerEvent) => {
@@ -93,94 +94,89 @@ export class Scene {
                 this.draggingCell.center = point;
             },
             'pointerup': (ev: PointerEvent) => {
-                this.draggingCell.ifHasPiece((piece) => {
+                const piece = this.draggingCell.takePiece();
+
+                if (piece) {
                     for (const [coordinate, cell] of this.board) {
                         if (this.canvas.isPointInPath(cell.path, ev.offsetX, ev.offsetY)) {
-                            cell.ifEmpty(() => {
-                                clear();
-                                this.draggingCell.takePiece();
+                            if (cell.piece == null) {
+                                removeListeners();
                                 this.pieceAnimations.moveTo(piece, cell).then(() => {
-                                    this.runBoops(coordinate, piece.kind);
+                                    this.runBoops(coordinate);
                                 });
-                            });
-                            break;
+                                return;
+                            }
                         }
                     }
-                });
 
-                this.draggingCell.ifHasPiece((piece) => {
-                    this.draggingCell.takePiece();
+
                     this.pieceAnimations.moveTo(piece, piece.home);
-                })
+                }
             }
         });
     }
 
-    runBoops({ r, c }: CellCoordinate, pieceKind: PieceKind) {
-        const boops: Promise<void>[] = [];
+    runBoops(origin: CellCoordinate) {
+        const animations: Promise<void>[] = [];
 
-        for (const dr of [-1, 0, 1]) {
-            for (const dc of [-1, 0, 1]) {
-                const neighborCoordinate = { r: r + dr, c: c + dc };
-                const neighbor = this.board.get(neighborCoordinate);
-                if (neighbor) {
-                    neighbor.ifHasPiece((neighborPiece) => {
-                        if (!(pieceKind == 'kitten' && neighborPiece.kind == 'cat')) {
-                            const targetCoordinate = { r: r + 2 * dr, c: c + 2 * dc };
-                            let target: Cell | undefined = this.board.get(targetCoordinate);
-                            if (target) {
-                                if (target.isEmpty()) {
-                                    neighbor.takePiece();
-                                    boops.push(this.pieceAnimations.moveTo(neighborPiece, target));
-                                }
-                            } else {
-                                target = this.gutter.get(targetCoordinate)!;
-                                neighbor.takePiece();
-                                boops.push(this.pieceAnimations.moveTo(neighborPiece, target).then(() => {
-                                    setTimeout(() => {
-                                        target!.takePiece();
-                                        this.pieceAnimations.moveTo(neighborPiece, neighborPiece.home);
-                                    }, 500);
-                                }));
-                            }
-                        }
+        for (const { from, to } of getBoops(this.board, origin)) {
+            const piece = this.board.get(from)!.takePiece()!;
+            if (to) {
+                const target = this.board.get(to)!;
+                animations.push(this.pieceAnimations.moveTo(piece, target));
+            } else {
+                const targetCoordinate = {
+                    r: 2 * from.r + origin.r,
+                    c: 2 * from.c + origin.c,
+                };
+                const target = this.gutter.get(targetCoordinate)!;
+                animations.push(this.pieceAnimations.moveTo(piece, target).then(() => {
+                    setTimeout(() => {
+                        target.takePiece();
+                        this.pieceAnimations.moveTo(piece, piece.home);
                     });
-                }
+                }));
             }
         }
 
-        Promise.all(boops).then(() => {
+        Promise.all(animations).then(() => {
             this.runPostBoop();
         })
     }
 
     runPostBoop() {
-        // If there's at least one triplet...
-        const triplets = Array.from(this.board.triplets('player'));
-        if (triplets.length != 0) {
-            const winningTriplet = triplets.find((triplet) => triplet.every(([_, cell]) => cell.piece?.kind == 'cat'));
-            if (winningTriplet) {
-                setTimeout(() => this.win(winningTriplet));
+        const winningTriplets = Array.from(getWinningTriplets(this.board, 'player'));
+
+        if (winningTriplets.length > 0) {
+            this.win(winningTriplets);
+        } else {
+            const graduationCandidates = Array.from(getGraduationCandidates(this.board, 'player'));
+            const retrievalCandidates = Array.from(getRetrievalCandidates(this.board, 'player'));
+
+            if (graduationCandidates.length > 0 && retrievalCandidates.length > 0) {
+                this.runGraduateTripletOrRetrievePiece(graduationCandidates, retrievalCandidates);
+            } else if (graduationCandidates.length > 0) {
+                this.runGraduateTriplet(graduationCandidates);
+            } else if (retrievalCandidates.length > 0) {
+                this.runRetrievePiece(retrievalCandidates);
             } else {
-                setTimeout(() => this.runGraduateTriplet(triplets));
+                this.runOpponentTurn();
             }
-            return;
         }
-
-        if (this.hands.player.isEmpty()) {
-            setTimeout(() => this.runRetrievePiece());
-            return;
-        }
-
-        // Otherwise, it's the opponent's turn
-        setTimeout(() => this.runOpponentTurn());
     }
 
-    runGraduateTriplet(triplets: Triplet[]) {
+    runGraduateTripletOrRetrievePiece(
+        graduationCandidates: Triplet[],
+        retrievalCandidates: CellCoordinate[]
+    ) {
 
     }
 
-    runRetrievePiece() {
+    runGraduateTriplet(candidates: Triplet[]) {
+
+    }
+
+    runRetrievePiece(candidates: CellCoordinate[]) {
 
     }
 
@@ -188,11 +184,11 @@ export class Scene {
 
     }
 
-    win(winningTriplet: Triplet) {
+    win(winningTriplets: Triplet[]) {
 
     }
 
-    lose(winningTriplet: Triplet) {
+    lose(winningTriplets: Triplet[]) {
 
     }
 }

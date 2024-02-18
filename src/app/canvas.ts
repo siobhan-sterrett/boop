@@ -58,14 +58,14 @@ export class Canvas {
     addEventListeners(listeners: Partial<{
         [K in keyof GlobalEventHandlersEventMap]: (ev: GlobalEventHandlersEventMap[K]) => void
     }>): {
-        clear(): void
+        removeListeners(): void
     } {
         for (const [eventKind, event] of Object.entries(listeners)) {
             this.#element.addEventListener(eventKind, event);
         }
 
         return {
-            clear: () => {
+            removeListeners: () => {
                 for (const [eventKind, event] of Object.entries(listeners)) {
                     this.#element.removeEventListener(eventKind, event);
                 }
