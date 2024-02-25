@@ -18,6 +18,14 @@ export class Hand {
     isEmpty(): boolean {
         return this.element.childElementCount == 0;
     }
+
+    append(piece: Piece) {
+        this.element.appendChild(piece.element);
+    }
+
+    remove(piece: Piece) {
+        this.element.removeChild(piece.element);
+    }
 }
 
 export const playerHand = (() => {

@@ -38,6 +38,11 @@ export class Piece {
         return this.element.dataset.owner;
     }
 
+    get center(): DOMPoint {
+        const { x, y, width, height } = this.element.getBoundingClientRect();
+        return new DOMPoint(x + width / 2, y + height / 2);
+    }
+
     graduate() {
         this.element.dataset.kind = 'cat';
     }

@@ -48,11 +48,11 @@ body {
 }
 
 .gray {
-    background-color: gray;
+    background-color: #9f9d9b;
 }
 
 .orange {
-    background-color: orange;
+    background-color: #e07729;
 }
 
 .piece[data-kind="kitten"] {
@@ -88,16 +88,16 @@ body {
     margin: 1px;
 }
 
-.cell-highlighted {
-    filter: brightness(300%);
+.selected {
+    filter: brightness(150%);
 }
 
 .row:nth-child(even) .cell:nth-child(even),
 .row:nth-child(odd) .cell:nth-child(odd) {
-    background-color: blue;
+    background-color: #3d4e6e;
 }
 
 .row:nth-child(even) .cell:nth-child(odd),
 .row:nth-child(odd) .cell:nth-child(even) {
-    background-color: navy;
+    background-color: #303345;
 }

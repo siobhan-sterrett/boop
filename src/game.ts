@@ -1,23 +1,6 @@
-import { Cell, playGameButton, showScreen } from "./elements"
+import { Cell, Piece, playGameButton, showScreen, playerMessage } from "./elements"
 import { opponentHand, playerHand } from "./elements";
 import { BoardCoordinate, board } from "./elements";
-
-const onDragEnter = (ev: DragEvent) => {
-    ev.target?.dispatchEvent(new Event('highlight'));
-    ev.preventDefault();
-}
-
-const onDragLeave = (ev: DragEvent) => {
-    ev.target?.dispatchEvent(new Event('unhighlight'));
-    ev.preventDefault();
-}
-
-const onDragOver = (ev: DragEvent) => {
-    if (ev.dataTransfer) {
-        ev.dataTransfer.dropEffect = 'move';
-    }
-    ev.preventDefault();
-}
 
 export const init = () => {
     console.log('init');
@@ -29,30 +12,6 @@ const startGame = () => {
     console.log('startGame');
     showScreen('game-play-area');
 
-    for (const piece of playerHand.pieces()) {
-        piece.element.addEventListener('dragstart', (ev: DragEvent) => {
-            if (ev.dataTransfer) {
-                ev.dataTransfer.setData('application/boop', piece.element.id);
-                ev.dataTransfer.effectAllowed = 'move';
-            }
-        });
-    }
-
-    for (const [coordinate, cell] of board) {
-        cell.element.addEventListener('highlight', () => cell.element.classList.add('cell-highlighted'));
-        cell.element.addEventListener('unhighlight', () => cell.element.classList.remove('cell-highlighted'));
-        cell.element.addEventListener('drop', (ev: DragEvent) => {
-            if (ev.dataTransfer) {
-                const pieceId = ev.dataTransfer.getData('application/boop');
-                cell.element.appendChild(document.getElementById(pieceId)!);
-            }
-
-            cell.element.dispatchEvent(new Event('unhighlight'));
-            setTimeout(() => playerPiecePlaced(coordinate));
-            ev.preventDefault();
-        });
-    }
-
     // TODO: For now, player always goes first
     setTimeout(playerTurn);
 }
@@ -60,17 +19,59 @@ const startGame = () => {
 const playerTurn = () => {
     console.log('playerTurn');
 
+    let selectedPiece: Piece | undefined = undefined;
+    const controller = new AbortController();
+
+    const selectPieceMsg = 'Select a piece to place on the board.';
+    const selectCellMsg = 'Select a board square to place your piece.'
+
+    playerMessage.innerText = selectPieceMsg;
+
     for (const piece of playerHand.pieces()) {
-        piece.element.setAttribute('draggable', 'true');
+        piece.element.addEventListener('pointerdown', (ev) => {
+            if (selectedPiece) {
+                selectedPiece.element.classList.remove('selected');
+            }
+            selectedPiece = piece;
+            piece.element.classList.add('selected');
+            playerMessage.innerText = selectCellMsg;
+            ev.stopPropagation();
+        }, { signal: controller.signal });
     }
 
-    for (const [_, cell] of board) {
+    for (const [coordinate, cell] of board) {
         if (cell.piece == null) {
-            cell.element.addEventListener('dragover', onDragOver);
-            cell.element.addEventListener('dragenter', onDragEnter);
-            cell.element.addEventListener('dragleave', onDragLeave);
+            cell.element.addEventListener('pointerdown', (ev) => {
+                if (selectedPiece) {
+                    const piece = selectedPiece;
+                    const dx = cell.center.x - selectedPiece.center.x;
+                    const dy = cell.center.y - selectedPiece.center.y;
+
+                    const animation = new Animation(new KeyframeEffect(piece.element, [
+                        { transform: "translate(0px, 0px)" },
+                        { transform: `translate(${dx}px, ${dy}px)` }
+                    ], 1000));
+
+                    animation.finished.then(() => {
+                        playerHand.remove(piece);
+                        cell.piece = piece;
+                        piece.element.classList.remove('selected');
+                        controller.abort();
+                        boop('player', coordinate);
+                    });
+
+                    animation.play();
+
+                    ev.stopPropagation();
+                }
+            })
         }
     }
+
+    document.addEventListener('pointerdown', () => {
+        selectedPiece = undefined;
+        playerMessage.innerText = selectPieceMsg;
+    });
 }
 
 const opponentTurn = () => {
@@ -81,27 +82,20 @@ const opponentTurn = () => {
     const [coordinate, target] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
     const { value: piece } = opponentHand.pieces().next();
-    opponentHand.element.removeChild(piece.element);
-    target.element.appendChild(piece.element);
 
-    setTimeout(() => boop('opponent', coordinate));
-}
+    const dx = target.center.x - piece.center.x;
+    const dy = target.center.y - piece.center.y;
 
-const playerPiecePlaced = (coordinate: BoardCoordinate) => {
-    console.log('playerPiecePlaced');
-    // Set player cells not draggable
-    for (const element of document.getElementsByClassName('player-piece')) {
-        element.setAttribute('draggable', 'false');
-    }
+    const animation = new Animation(new KeyframeEffect(piece.element, [
+        { transform: "translate(0px, 0px)" },
+        { transform: `translate(${dx}px, ${dy}px)` }
+    ], 1000));
 
-    // Remove drop targets from board
-    for (const [_, cell] of board) {
-        cell.element.removeEventListener('dragover', onDragOver);
-        cell.element.removeEventListener('dragenter', onDragEnter);
-        cell.element.removeEventListener('dragleave', onDragLeave);
-    }
-
-    setTimeout(() => boop('player', coordinate));
+    animation.finished.then(() => {
+        opponentHand.remove(piece);
+        target.piece = piece;
+        boop('opponent', coordinate);
+    });
 }
 
 const boop = (turn: 'player' | 'opponent', { r, c }: BoardCoordinate) => {
@@ -126,8 +120,6 @@ const boop = (turn: 'player' | 'opponent', { r, c }: BoardCoordinate) => {
             continue;
         }
 
-        const { height, width } = neighbor.element.getBoundingClientRect();
-
         if (boopingPiece.kind == 'kitten' && neighborPiece.kind == 'cat') {
             continue;
         }
@@ -135,22 +127,25 @@ const boop = (turn: 'player' | 'opponent', { r, c }: BoardCoordinate) => {
         const target = board.get({ r: r + 2 * dr, c: c + 2 * dc });
 
         if (target) {
+            const dx = target.center.x - neighbor.center.x;
+            const dy = target.center.y - neighbor.center.y;
+
             if (target.piece == null) {
                 const animation = new Animation(new KeyframeEffect(neighborPiece.element, [
                     { transform: "translate(0px, 0px)" },
-                    { transform: `translate(${width * dc}px, ${height * dr}px)` }
+                    { transform: `translate(${dx}px, ${dy}px)` }
                 ], 500));
 
                 animationPromises.push(animation.finished.then(() => {
-                    neighbor.element.removeChild(neighborPiece.element);
-                    target.element.appendChild(neighborPiece.element);
+                    neighbor.piece = null;
+                    target.piece = neighborPiece;
                 }));
 
                 animation.play();
             } else {
                 const animation = new Animation(new KeyframeEffect(neighborPiece.element, [
                     { transform: "translate(0px, 0px)" },
-                    { transform: `translate(${width * dc / 2}px, ${height * dr / 2}px)` },
+                    { transform: `translate(${dx / 2}px, ${dy / 2}px)` },
                     { transform: "translate(0px, 0px)" }
                 ], 500));
 
@@ -159,17 +154,20 @@ const boop = (turn: 'player' | 'opponent', { r, c }: BoardCoordinate) => {
                 animation.play();
             }
         } else {
+            const dx = neighbor.center.x - cell.center.x;
+            const dy = neighbor.center.y - cell.center.y;
+
             const animation = new Animation(new KeyframeEffect(neighborPiece.element, [
                 { transform: "translate(0px, 0px)" },
-                { transform: `translate(${width * dc}px, ${height * dr}px)` }
+                { transform: `translate(${dx}px, ${dy}px)` }
             ], 500));
 
             animationPromises.push(animation.finished.then(() => {
-                neighbor.element.removeChild(neighborPiece.element);
+                neighbor.piece = null;
                 if (neighbor.piece!.owner == 'player') {
-                    playerHand.element.appendChild(neighborPiece.element);
+                    playerHand.append(neighborPiece);
                 } else {
-                    opponentHand.element.appendChild(neighborPiece.element);
+                    opponentHand.append(neighborPiece);
                 }
             }));
 
@@ -224,12 +222,12 @@ const graduateTriplet = (turn: 'player' | 'opponent', triplet: [Cell, Cell, Cell
 
     for (const cell of triplet) {
         const piece = cell.piece!;
-        cell.element.removeChild(piece.element);
+        cell.piece = null;
         piece.graduate();
         if (turn == 'player') {
-            playerHand.element.appendChild(piece.element);
+            playerHand.append(piece);
         } else {
-            opponentHand.element.appendChild(piece.element);
+            opponentHand.append(piece);
         }
     }
 

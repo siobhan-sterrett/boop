@@ -17,7 +17,18 @@ export class Cell {
         return null;
     }
 
-    set piece(piece: Piece) {
-        this.element.appendChild(piece.element);
+    set piece(piece: Piece | null) {
+        if (piece) {
+            this.element.appendChild(piece.element);
+        } else {
+            if (this.piece) {
+                this.element.removeChild(this.piece.element);
+            }
+        }
+    }
+
+    get center(): DOMPoint {
+        const { x, y, width, height } = this.element.getBoundingClientRect();
+        return new DOMPoint(x + width / 2, y + height / 2);
     }
 }

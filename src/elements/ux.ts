@@ -32,3 +32,11 @@ export const playGameButton = (() => {
     }
     return playGameButton;
 })();
+
+export const playerMessage = (() => {
+    const playerMessage = document.getElementById('player-message');
+    if (!playerMessage) {
+        throw new Error('player message not found');
+    }
+    return playerMessage;
+})();
