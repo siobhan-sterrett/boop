@@ -1,4 +1,5 @@
-import { cells, getCell, getEmptyCells, getTriplets, opponentHand, playGameButton, playerHand, showScreen } from "./elements"
+import { cells, getCell, getEmptyCells, getTriplets, playGameButton, showScreen } from "./elements"
+import { opponentHand, playerHand } from "./elements/hand";
 
 const onDragEnter = (ev: DragEvent) => {
     ev.target?.dispatchEvent(new Event('highlight'));
@@ -27,10 +28,10 @@ const startGame = () => {
     console.log('startGame');
     showScreen('game-play-area');
 
-    for (const pieceElement of playerHand.children) {
-        pieceElement.addEventListener('dragstart', (ev: DragEvent) => {
+    for (const piece of playerHand.pieces()) {
+        piece.element.addEventListener('dragstart', (ev: DragEvent) => {
             if (ev.dataTransfer) {
-                ev.dataTransfer.setData('application/boop', pieceElement.id);
+                ev.dataTransfer.setData('application/boop', piece.element.id);
                 ev.dataTransfer.effectAllowed = 'move';
             }
         });
@@ -59,8 +60,8 @@ const startGame = () => {
 
 const playerTurn = () => {
     console.log('playerTurn');
-    for (const element of playerHand.children) {
-        element.setAttribute('draggable', 'true');
+    for (const piece of playerHand.pieces()) {
+        piece.element.setAttribute('draggable', 'true');
     }
 
     for (const [_, cell] of getEmptyCells()) {
@@ -77,9 +78,9 @@ const opponentTurn = () => {
 
     const [[r, c], target] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
-    const piece = opponentHand.children[0];
-    opponentHand.removeChild(piece);
-    target.appendChild(piece);
+    const { value: piece } = opponentHand.pieces().next();
+    opponentHand.element.removeChild(piece.element);
+    target.appendChild(piece.element);
 
     setTimeout(() => boop('opponent', r, c));
 }
@@ -166,9 +167,9 @@ const boop = (turn: 'player' | 'opponent', r: number, c: number) => {
             animationPromises.push(animation.finished.then(() => {
                 neighbor.removeChild(piece);
                 if (piece.classList.contains('player-piece')) {
-                    playerHand.appendChild(piece);
+                    playerHand.element.appendChild(piece);
                 } else {
-                    opponentHand.appendChild(piece);
+                    opponentHand.element.appendChild(piece);
                 }
             }));
 
@@ -204,13 +205,13 @@ const postBoop = (turn: 'player' | 'opponent') => {
             }
         } else {
             if (turn == 'player') {
-                if (playerHand.childElementCount == 0) {
+                if (playerHand.isEmpty()) {
                     setTimeout(returnPlayerPieceToHand);
                 } else {
                     setTimeout(opponentTurn, 500);
                 }
             } else {
-                if (opponentHand.childElementCount == 0) {
+                if (opponentHand.isEmpty()) {
                     setTimeout(returnOpponentPieceToHand);
                 } else {
                     setTimeout(playerTurn, 500);
@@ -231,9 +232,9 @@ const graduateTriplet = (turn: 'player' | 'opponent', triplet: Element[]) => {
             piece.classList.add('cat');
         }
         if (turn == 'player') {
-            playerHand.appendChild(piece);
+            playerHand.element.appendChild(piece);
         } else {
-            opponentHand.appendChild(piece);
+            opponentHand.element.appendChild(piece);
         }
     }
 
@@ -295,7 +296,7 @@ const returnPlayerPieceToHand = () => {
                 cell.dispatchEvent(new Event('highlight'));
                 const onClick = () => {
                     cell.removeChild(piece);
-                    playerHand.appendChild(piece);
+                    playerHand.element.appendChild(piece);
                     removeOnClicks.forEach((callback) => callback());
 
                     setTimeout(opponentTurn, 500);
@@ -326,7 +327,7 @@ const returnOpponentPieceToHand = () => {
     const cell = opponentCells[Math.floor(Math.random() * opponentCells.length)];
     const piece = cell.children[0];
     cell.removeChild(piece);
-    opponentHand.appendChild(piece);
+    opponentHand.element.appendChild(piece);
 
     setTimeout(playerTurn, 500);
 }
