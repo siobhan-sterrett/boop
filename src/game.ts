@@ -1,5 +1,6 @@
-import { cells, getCell, getEmptyCells, getTriplets, playGameButton, showScreen } from "./elements"
-import { opponentHand, playerHand } from "./elements/hand";
+import { Cell, playGameButton, showScreen } from "./elements"
+import { opponentHand, playerHand } from "./elements";
+import { BoardCoordinate, board } from "./elements";
 
 const onDragEnter = (ev: DragEvent) => {
     ev.target?.dispatchEvent(new Event('highlight'));
@@ -37,22 +38,20 @@ const startGame = () => {
         });
     }
 
-    cells.forEach((row, rowIdx) => {
-        row.forEach((cell, colIdx) => {
-            cell.addEventListener('highlight', () => cell.classList.add('cell-highlighted'));
-            cell.addEventListener('unhighlight', () => cell.classList.remove('cell-highlighted'));
-            cell.addEventListener('drop', (ev: DragEvent) => {
-                if (ev.dataTransfer) {
-                    const pieceId = ev.dataTransfer.getData('application/boop');
-                    cell.appendChild(document.getElementById(pieceId)!);
-                }
+    for (const [coordinate, cell] of board) {
+        cell.element.addEventListener('highlight', () => cell.element.classList.add('cell-highlighted'));
+        cell.element.addEventListener('unhighlight', () => cell.element.classList.remove('cell-highlighted'));
+        cell.element.addEventListener('drop', (ev: DragEvent) => {
+            if (ev.dataTransfer) {
+                const pieceId = ev.dataTransfer.getData('application/boop');
+                cell.element.appendChild(document.getElementById(pieceId)!);
+            }
 
-                cell.dispatchEvent(new Event('unhighlight'));
-                setTimeout(() => playerPiecePlaced(rowIdx, colIdx));
-                ev.preventDefault();
-            });
-        })
-    })
+            cell.element.dispatchEvent(new Event('unhighlight'));
+            setTimeout(() => playerPiecePlaced(coordinate));
+            ev.preventDefault();
+        });
+    }
 
     // TODO: For now, player always goes first
     setTimeout(playerTurn);
@@ -60,32 +59,35 @@ const startGame = () => {
 
 const playerTurn = () => {
     console.log('playerTurn');
+
     for (const piece of playerHand.pieces()) {
         piece.element.setAttribute('draggable', 'true');
     }
 
-    for (const [_, cell] of getEmptyCells()) {
-        cell.addEventListener('dragover', onDragOver);
-        cell.addEventListener('dragenter', onDragEnter);
-        cell.addEventListener('dragleave', onDragLeave);
+    for (const [_, cell] of board) {
+        if (cell.piece == null) {
+            cell.element.addEventListener('dragover', onDragOver);
+            cell.element.addEventListener('dragenter', onDragEnter);
+            cell.element.addEventListener('dragleave', onDragLeave);
+        }
     }
 }
 
 const opponentTurn = () => {
     console.log('opponentTurn');
 
-    const emptyCells = getEmptyCells();
+    const emptyCells = Array.from(board).filter(([_, cell]) => cell.piece == null);
 
-    const [[r, c], target] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    const [coordinate, target] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
     const { value: piece } = opponentHand.pieces().next();
     opponentHand.element.removeChild(piece.element);
-    target.appendChild(piece.element);
+    target.element.appendChild(piece.element);
 
-    setTimeout(() => boop('opponent', r, c));
+    setTimeout(() => boop('opponent', coordinate));
 }
 
-const playerPiecePlaced = (r: number, c: number) => {
+const playerPiecePlaced = (coordinate: BoardCoordinate) => {
     console.log('playerPiecePlaced');
     // Set player cells not draggable
     for (const element of document.getElementsByClassName('player-piece')) {
@@ -93,19 +95,18 @@ const playerPiecePlaced = (r: number, c: number) => {
     }
 
     // Remove drop targets from board
-    for (const row of cells) {
-        for (const cell of row) {
-            cell.removeEventListener('dragover', onDragOver);
-            cell.removeEventListener('dragenter', onDragEnter);
-            cell.removeEventListener('dragleave', onDragLeave);
-        }
+    for (const [_, cell] of board) {
+        cell.element.removeEventListener('dragover', onDragOver);
+        cell.element.removeEventListener('dragenter', onDragEnter);
+        cell.element.removeEventListener('dragleave', onDragLeave);
     }
 
-    setTimeout(() => boop('player', r, c));
+    setTimeout(() => boop('player', coordinate));
 }
 
-const boop = (turn: 'player' | 'opponent', r: number, c: number) => {
+const boop = (turn: 'player' | 'opponent', { r, c }: BoardCoordinate) => {
     console.log('boop');
+
     const vectors: [number, number][] = [
         [-1, -1], [-1, 0], [-1, 1],
         [0, -1], [0, 1],
@@ -114,41 +115,40 @@ const boop = (turn: 'player' | 'opponent', r: number, c: number) => {
 
     const animationPromises: Promise<unknown>[] = [];
 
-    const cell = getCell(r, c)!;
-    const boopingPiece = cell.children[0];
+    const cell = board.get({ r, c })!;
+    const boopingPiece = cell.piece!;
 
     for (const [dr, dc] of vectors) {
-        const neighbor = getCell(r + dr, c + dc);
+        const neighbor = board.get({ r: r + dr, c: c + dc });
+        const neighborPiece = neighbor?.piece;
 
-        if (!neighbor?.hasChildNodes()) {
+        if (!neighborPiece) {
             continue;
         }
 
-        const { height, width } = neighbor.getBoundingClientRect();
+        const { height, width } = neighbor.element.getBoundingClientRect();
 
-        const piece = neighbor.children[0];
-
-        if (boopingPiece.classList.contains('kitten') && piece.classList.contains('cat')) {
+        if (boopingPiece.kind == 'kitten' && neighborPiece.kind == 'cat') {
             continue;
         }
 
-        const target = getCell(r + 2 * dr, c + 2 * dc);
+        const target = board.get({ r: r + 2 * dr, c: c + 2 * dc });
 
         if (target) {
-            if (!target.hasChildNodes()) {
-                const animation = new Animation(new KeyframeEffect(piece, [
+            if (target.piece == null) {
+                const animation = new Animation(new KeyframeEffect(neighborPiece.element, [
                     { transform: "translate(0px, 0px)" },
                     { transform: `translate(${width * dc}px, ${height * dr}px)` }
                 ], 500));
 
                 animationPromises.push(animation.finished.then(() => {
-                    neighbor.removeChild(piece);
-                    target.appendChild(piece);
+                    neighbor.element.removeChild(neighborPiece.element);
+                    target.element.appendChild(neighborPiece.element);
                 }));
 
                 animation.play();
             } else {
-                const animation = new Animation(new KeyframeEffect(piece, [
+                const animation = new Animation(new KeyframeEffect(neighborPiece.element, [
                     { transform: "translate(0px, 0px)" },
                     { transform: `translate(${width * dc / 2}px, ${height * dr / 2}px)` },
                     { transform: "translate(0px, 0px)" }
@@ -159,17 +159,17 @@ const boop = (turn: 'player' | 'opponent', r: number, c: number) => {
                 animation.play();
             }
         } else {
-            const animation = new Animation(new KeyframeEffect(piece, [
+            const animation = new Animation(new KeyframeEffect(neighborPiece.element, [
                 { transform: "translate(0px, 0px)" },
                 { transform: `translate(${width * dc}px, ${height * dr}px)` }
             ], 500));
 
             animationPromises.push(animation.finished.then(() => {
-                neighbor.removeChild(piece);
-                if (piece.classList.contains('player-piece')) {
-                    playerHand.element.appendChild(piece);
+                neighbor.element.removeChild(neighborPiece.element);
+                if (neighbor.piece!.owner == 'player') {
+                    playerHand.element.appendChild(neighborPiece.element);
                 } else {
-                    opponentHand.element.appendChild(piece);
+                    opponentHand.element.appendChild(neighborPiece.element);
                 }
             }));
 
@@ -181,15 +181,13 @@ const boop = (turn: 'player' | 'opponent', r: number, c: number) => {
 }
 
 const postBoop = (turn: 'player' | 'opponent') => {
+    // TODO: If player can graduate or retrieve, they get to choose one.
     console.log('postBoop');
 
-    const triplets = getTriplets(turn);
+    const triplets = Array.from(board.triplets(turn));
 
     const winningTriplet = triplets.find((triplet) =>
-        triplet.every((cell) => {
-            const piece = cell?.children[0];
-            return piece?.classList.contains('cat');
-        })
+        triplet.every((cell) => cell?.piece?.kind == 'cat')
     );
 
     if (winningTriplet) {
@@ -221,20 +219,17 @@ const postBoop = (turn: 'player' | 'opponent') => {
     }
 }
 
-const graduateTriplet = (turn: 'player' | 'opponent', triplet: Element[]) => {
+const graduateTriplet = (turn: 'player' | 'opponent', triplet: [Cell, Cell, Cell]) => {
     console.log('graduateTriplet');
 
     for (const cell of triplet) {
-        const piece = cell.children[0];
-        cell.removeChild(piece);
-        if (piece.classList.contains('kitten')) {
-            piece.classList.remove('kitten');
-            piece.classList.add('cat');
-        }
+        const piece = cell.piece!;
+        cell.element.removeChild(piece.element);
+        piece.graduate();
         if (turn == 'player') {
-            playerHand.element.appendChild(piece);
+            playerHand.element.appendChild(piece.element);
         } else {
-            opponentHand.element.appendChild(piece);
+            opponentHand.element.appendChild(piece.element);
         }
     }
 
@@ -245,12 +240,12 @@ const graduateTriplet = (turn: 'player' | 'opponent', triplet: Element[]) => {
     }
 }
 
-const choosePlayerTripletToGraduate = (triplets: Element[][]) => {
+const choosePlayerTripletToGraduate = (triplets: [Cell, Cell, Cell][]) => {
     console.log('choosePlayerTripletToGraduate');
 
     for (const triplet of triplets) {
         for (const cell of triplet) {
-            cell.dispatchEvent(new Event('highlight'));
+            cell.element.dispatchEvent(new Event('highlight'));
         }
     }
 
@@ -261,7 +256,7 @@ const choosePlayerTripletToGraduate = (triplets: Element[][]) => {
                 const onClick = () => {
                     for (const triplet of triplets) {
                         for (const cell of triplet) {
-                            cell.dispatchEvent(new Event('unhighlight'));
+                            cell.element.dispatchEvent(new Event('unhighlight'));
                         }
                     }
 
@@ -270,14 +265,14 @@ const choosePlayerTripletToGraduate = (triplets: Element[][]) => {
                     setTimeout(() => graduateTriplet('player', triplet));
                 };
 
-                removeOnClicks.push(() => cell.removeEventListener('click', onClick));
-                cell.addEventListener('click', onClick);
+                removeOnClicks.push(() => cell.element.removeEventListener('click', onClick));
+                cell.element.addEventListener('click', onClick);
             }
         }
     }
 }
 
-const chooseOpponentTripletToGraduate = (triplets: Element[][]) => {
+const chooseOpponentTripletToGraduate = (triplets: [Cell, Cell, Cell][]) => {
     console.log('chooseOpponentTripletToGraduate');
 
     const triplet = triplets[Math.floor(Math.random() * triplets.length)];
@@ -289,24 +284,22 @@ const returnPlayerPieceToHand = () => {
     console.log('returnPlayerPieceToHand');
 
     const removeOnClicks: (() => void)[] = [];
-    for (const row of cells) {
-        for (const cell of row) {
-            const piece = cell.children[0];
-            if (piece && piece.classList.contains('player-piece')) {
-                cell.dispatchEvent(new Event('highlight'));
-                const onClick = () => {
-                    cell.removeChild(piece);
-                    playerHand.element.appendChild(piece);
-                    removeOnClicks.forEach((callback) => callback());
+    for (const [_, cell] of board) {
+        const piece = cell.piece;
+        if (piece?.owner == 'player') {
+            cell.element.dispatchEvent(new Event('highlight'));
+            const onClick = () => {
+                cell.element.removeChild(piece.element);
+                playerHand.element.appendChild(piece.element);
+                removeOnClicks.forEach((callback) => callback());
 
-                    setTimeout(opponentTurn, 500);
-                };
-                removeOnClicks.push(() => {
-                    cell.dispatchEvent(new Event('unhighlight'));
-                    cell.removeEventListener('click', onClick);
-                });
-                cell.addEventListener('click', onClick);
-            }
+                setTimeout(opponentTurn, 500);
+            };
+            removeOnClicks.push(() => {
+                cell.element.dispatchEvent(new Event('unhighlight'));
+                cell.element.removeEventListener('click', onClick);
+            });
+            cell.element.addEventListener('click', onClick);
         }
     }
 }
@@ -314,20 +307,12 @@ const returnPlayerPieceToHand = () => {
 const returnOpponentPieceToHand = () => {
     console.log('returnOpponentPieceToHand');
 
-    const opponentCells: Element[] = [];
-    for (const row of cells) {
-        for (const cell of row) {
-            const piece = cell.children[0];
-            if (piece && piece.classList.contains('opponent-piece')) {
-                opponentCells.push(cell);
-            }
-        }
-    }
+    const opponentCells = Array.from(board).map(([_, cell]) => cell).filter((cell) => cell.piece?.owner == 'opponent');
 
     const cell = opponentCells[Math.floor(Math.random() * opponentCells.length)];
-    const piece = cell.children[0];
-    cell.removeChild(piece);
-    opponentHand.element.appendChild(piece);
+    const piece = cell.piece!;
+    cell.element.removeChild(piece.element);
+    opponentHand.element.appendChild(piece.element);
 
     setTimeout(playerTurn, 500);
 }

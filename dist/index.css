@@ -55,13 +55,13 @@ body {
     background-color: orange;
 }
 
-.kitten {
+.piece[data-kind="kitten"] {
     width: 20px;
     height: 20px;
     margin: 10px;
 }
 
-.cat {
+.piece[data-kind="cat"] {
     width: 30px;
     height: 30px;
     margin: 5px;

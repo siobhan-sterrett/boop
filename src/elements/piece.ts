@@ -1,4 +1,7 @@
-import { PIECE_KINDS, PIECE_OWNERS, PieceKind, PieceOwner } from "../rules";
+export const PIECE_KINDS = ['kitten', 'cat'] as const;
+export type PieceKind = typeof PIECE_KINDS[number];
+export const PIECE_OWNERS = ['player', 'opponent'] as const;
+export type PieceOwner = typeof PIECE_OWNERS[number];
 
 type PieceElement = HTMLElement & {
     dataset: {
