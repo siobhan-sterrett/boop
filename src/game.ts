@@ -1,4 +1,4 @@
-import { Cell, Piece, playGameButton, showScreen, playerMessage } from "./elements"
+import { Piece, playGameButton, showScreen, playerMessage } from "./elements"
 import { opponentHand, playerHand, hand } from "./elements";
 import { BoardCoordinate, board, boardCoordinateEq } from "./elements";
 import { playerConfirmButton } from "./elements/ux";
@@ -31,10 +31,10 @@ const playerTurn = () => {
     for (const piece of playerHand.pieces()) {
         piece.element.addEventListener('click', (ev) => {
             if (selectedPiece) {
-                selectedPiece.element.classList.remove('selected');
+                selectedPiece.selected = false;
             }
             selectedPiece = piece;
-            piece.element.classList.add('selected');
+            piece.selected = true;
             playerMessage.innerText = selectCellMsg;
             ev.stopPropagation();
         }, { signal: controller.signal });
@@ -56,7 +56,7 @@ const playerTurn = () => {
                     animation.finished.then(() => {
                         playerHand.remove(piece);
                         cell.piece = piece;
-                        piece.element.classList.remove('selected');
+                        piece.selected = false;
                         controller.abort();
                         boop('player', coordinate);
                     });
@@ -70,7 +70,10 @@ const playerTurn = () => {
     }
 
     document.addEventListener('click', () => {
-        selectedPiece = undefined;
+        if (selectedPiece) {
+            selectedPiece.selected = false;
+            selectedPiece = undefined;
+        }
         playerMessage.innerText = selectPieceMsg;
     }, { signal: controller.signal });
 }
@@ -256,7 +259,7 @@ function playerPostBoop() {
             const cell = board.get(coordinate)!;
             const piece = cell.piece!;
             cell.piece = null;
-            piece.element.classList.remove('selected');
+            piece.selected = false;
             playerHand.append(piece);
 
             if (playerConfirmButton.value == 'Graduate') {
@@ -287,19 +290,19 @@ function playerPostBoop() {
                 let idx = selected.findIndex((selectedCoordinate) => boardCoordinateEq(coordinate, selectedCoordinate));
                 if (idx != -1) {
                     selected.splice(idx, 1);
-                    piece.element.classList.remove('selected');
+                    piece.selected = false;
                 }
 
                 // Otherwise, if there are no pieces selected, select this piece
                 else if (selected.length == 0) {
                     selected.push(coordinate);
-                    piece.element.classList.add('selected');
+                    piece.selected = true;
                 }
 
                 // Otherwise, if this piece is part of a selectable triplet, select this piece
                 else if (selectableTriplets.some((triplet) => triplet.some((tripletCoordinate) => boardCoordinateEq(coordinate, tripletCoordinate)))) {
                     selected.push(coordinate);
-                    piece.element.classList.add('selected');
+                    piece.selected = true;
                 }
 
                 // Finally, update the confirm button and update the selectable triplets

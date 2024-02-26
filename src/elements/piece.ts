@@ -43,6 +43,14 @@ export class Piece {
         return new DOMPoint(x + width / 2, y + height / 2);
     }
 
+    set selected(selected: boolean) {
+        if (selected) {
+            this.element.classList.add('selected');
+        } else {
+            this.element.classList.remove('selected');
+        }
+    }
+
     graduate() {
         this.element.dataset.kind = 'cat';
     }
