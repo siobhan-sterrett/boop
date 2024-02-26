@@ -101,3 +101,10 @@ body {
 .row:nth-child(odd) .cell:nth-child(even) {
     background-color: #303345;
 }
+
+#player-comms {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

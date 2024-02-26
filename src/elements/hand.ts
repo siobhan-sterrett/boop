@@ -1,4 +1,4 @@
-import { Piece, isPieceElement } from "./piece";
+import { Piece, PieceOwner, isPieceElement } from "./piece";
 
 export class Hand {
     element: Element;
@@ -46,3 +46,11 @@ export const opponentHand = (() => {
         throw new Error('Opponent hand not found');
     }
 })();
+
+export function hand(owner: PieceOwner): Hand {
+    if (owner == 'player') {
+        return playerHand;
+    } else {
+        return opponentHand;
+    }
+}

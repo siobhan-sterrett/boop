@@ -40,3 +40,11 @@ export const playerMessage = (() => {
     }
     return playerMessage;
 })();
+
+export const playerConfirmButton = (() => {
+    const element = document.getElementById('player-confirm');
+    if (!element) {
+        throw new Error('player confirm button not found');
+    }
+    return element as HTMLInputElement;
+})();

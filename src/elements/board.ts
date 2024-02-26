@@ -6,6 +6,9 @@ export type BoardCoordinate = {
     c: number;
 }
 
+export function boardCoordinateEq(a: BoardCoordinate, b: BoardCoordinate): boolean {
+    return a.r == b.r && a.c == b.c;
+}
 export class Board {
     element: Element;
 
@@ -31,7 +34,27 @@ export class Board {
         }
     }
 
-    *triplets(owner: PieceOwner): Generator<[Cell, Cell, Cell]> {
+    canGraduate(owner: PieceOwner): boolean {
+        for (const triplet of this.triplets(owner)) {
+            if (triplet.some((coordinate) => this.get(coordinate)?.piece?.kind == 'kitten')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    hasWinningTriplet(owner: PieceOwner): boolean {
+        for (const triplet of this.triplets(owner)) {
+            if (triplet.every((coordinate) => this.get(coordinate)?.piece?.kind == 'cat')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    *triplets(owner: PieceOwner): Generator<[BoardCoordinate, BoardCoordinate, BoardCoordinate]> {
         const vectors: [number, number][] = [[0, -1], [-1, -1], [-1, 0], [-1, 1]];
 
         for (const [{ r, c }, cell] of this) {
@@ -48,7 +71,7 @@ export class Board {
                     const right = this.get(rightCoordinate);
 
                     if (left?.piece?.owner == owner && right?.piece?.owner == owner) {
-                        yield [left, cell, right];
+                        yield [leftCoordinate, { r, c }, rightCoordinate];
                     }
                 }
             }
